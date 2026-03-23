@@ -32,7 +32,7 @@ def save_log(data):
 def main():
     # --- [수정] 날씨 API 설정 ---
     WEATHER_API_KEY = "97e9ad342e69a006e6c55886b18842c2"
-    WEATHER_CITY = "Saha-gu"
+    WEATHER_CITY = "Busan"  # Saha-gu는 동네명이므로 도시명으로 변경
 
     # 1. 각 모듈 및 로그 초기화
     print("⚙️ [System] 지능형 공조 제어 시스템을 초기화합니다...")
@@ -43,8 +43,10 @@ def main():
     hvac = HVACSimulator()
     engine = ThermalEngine()
     
-    # 2. 카메라 설정
+    # 2. 카메라 설정 (노트북 내장 카메라만 사용)
     cap = cv2.VideoCapture(0)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, 480)  # 640 -> 480: 해상도 조정으로 프레임 처리 속도 개선
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 360)  # 480 -> 360: 버벅거림 해소
     if not cap.isOpened():
         print("❌ [Error] 카메라를 열 수 없습니다.")
         return
@@ -66,10 +68,10 @@ def main():
         out_temp, _ = weather.fetch_current_weather()
         hvac.simulate_step(out_temp)
 
-        key = cv2.waitKey(1) & 0xFF
+        key = cv2.waitKey(30) & 0xFF  # 30ms 대기하여 키입력 감지 확률 향상
 
         # --- 핵심 제어 및 로그 기록 루프 ('s' 키) ---
-        if key == ord('s'):
+        if key == ord('s') or key == ord('S'):
             print("\n🔍 [Step 1] VLM 시각 분석 시작...")
             vlm_data = vlm.analyze_frame(frame)
             
@@ -126,7 +128,7 @@ def main():
             else:
                 print("⚠️ [Warning] VLM 분석에 실패했습니다.")
 
-        elif key == ord('q'):
+        elif key == ord('q') or key == ord('Q'):
             print("\n👋 프로그램을 종료합니다.")
             break
 
