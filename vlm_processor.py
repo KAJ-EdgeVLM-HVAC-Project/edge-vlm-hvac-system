@@ -17,17 +17,17 @@ class VLMProcessor:
         self.model_id = "Qwen/Qwen2-VL-2B-Instruct"
         
         try:
-            # macOS M5 MPS 최적화: dtype으로 메모리 효율과 성능 극대화
+            # macOS M5 MPS 최적화: torch_dtype으로 메모리 효율과 성능 극대화
             self.model = Qwen2VLForConditionalGeneration.from_pretrained(
                 self.model_id,
-                dtype=torch.bfloat16,  # torch_dtype 대신 dtype 사용
-                low_cpu_mem_usage=True,
-                device_map="auto"  # accelerate와 호환 가능
-            )
+                torch_dtype=torch.bfloat16,
+                low_cpu_mem_usage=True
+            ).to(self.device)
             self.processor = AutoProcessor.from_pretrained(self.model_id)
             print(f"✅ [VLM] {self.device.upper()} 로드 완료")
         except Exception as e:
             print(f"❌ [VLM] 로드 에러: {e}")
+            raise
 
     def analyze_frame(self, frame):
         # [macOS M5 최적화] 성능과 정확도의 균형: 해상도 감소로 분석 속도 개선
