@@ -1,3 +1,4 @@
+import os
 import torch
 import json
 import re
@@ -15,9 +16,10 @@ class VLMProcessor:
     역할: 카메라 프레임에서 PMV 입력 파라미터 및 맥락 신호를 추출합니다.
 
     ── 디바이스 우선순위 ───────────────────────────────────────────────────────
-      1. MPS  (Apple Silicon M1~M5) — float16
-      2. CUDA (NVIDIA GPU)          — float16
-      3. CPU  (그 외 모든 환경)       — float32
+      1. TRT  (Jetson TRT-LLM INT4 엔진 존재 시) — float16 (최우선)
+      2. MPS  (Apple Silicon M1~M5)              — float16
+      3. CUDA (NVIDIA GPU)                       — float16
+      4. CPU  (그 외 모든 환경)                   — float32
 
     ── 감지 항목 ──────────────────────────────────────────────────────────────
     PMV 입력:
@@ -31,6 +33,8 @@ class VLMProcessor:
 
     ※ 인원 수(people)는 YOLODetector가 전담 — VLM 프롬프트에서 제거됨.
     """
+
+    TRT_ENGINE_PATH = "./qwen2vl_engine"  # Jetson TRT 엔진 경로
 
     # PMV 입력 매핑 테이블 (ISO 7730:2005 근거)
     CLO_BASE  = {'short': 0.5, 'long': 1.0}
@@ -53,10 +57,13 @@ class VLMProcessor:
     def _select_device():
         """
         최적 추론 디바이스 자동 선택
+          - Jetson TRT 엔진 존재:           'trt',  float16  (최우선)
           - Apple Silicon (MPS 사용 가능):  'mps',  float16
           - NVIDIA GPU (CUDA 사용 가능):    'cuda', float16
           - CPU 전용 또는 그 외:            'cpu',  float32
         """
+        if os.path.exists(VLMProcessor.TRT_ENGINE_PATH):
+            return "trt", torch.float16
         if torch.backends.mps.is_available():
             return "mps", torch.float16
         if torch.cuda.is_available():
@@ -71,7 +78,18 @@ class VLMProcessor:
         print(f"🚀 [VLM] {self.device.upper()} ({chip}) 모드로 초기화 중...")
 
         try:
-            if self.device == "mps":
+            if self.device == "trt":
+                # Jetson TRT-LLM 런타임 로드 (convert_tensorrt.py --vlm-int4 실행 후)
+                from tensorrt_llm.runtime import ModelRunner
+                self.model = ModelRunner.from_dir(
+                    engine_dir=self.TRT_ENGINE_PATH,
+                    rank=0,
+                )
+                self.processor = AutoProcessor.from_pretrained(
+                    self.model_id, local_files_only=True
+                )
+                print(f"✅ [VLM] TRT-LLM INT4 엔진 로드 완료 ({self.TRT_ENGINE_PATH})")
+            elif self.device == "mps":
                 # Apple Silicon: device_map 미사용, 로드 후 .to('mps')
                 # attn_implementation="eager": MPS SDPA 차원 버그 우회
                 self.model = Qwen2VLForConditionalGeneration.from_pretrained(
@@ -81,6 +99,11 @@ class VLMProcessor:
                     attn_implementation="eager",
                     local_files_only=True,
                 ).to(self.device)
+                self.processor = AutoProcessor.from_pretrained(
+                    self.model_id, local_files_only=True
+                )
+                print(f"✅ [VLM] {self.model_id} 로드 완료 "
+                      f"(device={self.device}, dtype={self.dtype})")
             else:
                 # CUDA / CPU: device_map으로 직접 배치
                 self.model = Qwen2VLForConditionalGeneration.from_pretrained(
@@ -90,11 +113,11 @@ class VLMProcessor:
                     device_map={"": self.device},
                     local_files_only=True,
                 )
-            self.processor = AutoProcessor.from_pretrained(
-                self.model_id, local_files_only=True
-            )
-            print(f"✅ [VLM] {self.model_id} 로드 완료 "
-                  f"(device={self.device}, dtype={self.dtype})")
+                self.processor = AutoProcessor.from_pretrained(
+                    self.model_id, local_files_only=True
+                )
+                print(f"✅ [VLM] {self.model_id} 로드 완료 "
+                      f"(device={self.device}, dtype={self.dtype})")
         except Exception as e:
             print(f"❌ [VLM] 모델 로드 실패: {e}")
             self.model     = None
@@ -121,9 +144,9 @@ class VLMProcessor:
             print("⚠️ [VLM] 모델이 로드되지 않아 분석 불가.")
             return None
 
-        # 320×320으로 다운스케일
-        resized = cv2.resize(frame, (320, 320))
-        pil_img = Image.fromarray(cv2.cvtColor(resized, cv2.COLOR_BGR2RGB))
+        # 원본 해상도 그대로 사용 (640×480). Qwen2-VL은 가변 해상도 입력 지원.
+        # 320×320 다운스케일은 4:3 비율을 정방형으로 왜곡하고 원거리 피사체 픽셀을 손실시킴.
+        pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         prompt_text = (
             "Task: fill in the 5 blanks below using ONLY the listed options. "

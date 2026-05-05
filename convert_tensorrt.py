@@ -16,6 +16,7 @@
 """
 
 import argparse
+import os
 import sys
 
 
@@ -39,6 +40,53 @@ def convert_yolo():
         print("[YOLO] ultralytics 미설치: pip install ultralytics")
     except Exception as e:
         print(f"[YOLO] 변환 실패: {e}")
+
+
+def convert_vlm_int4():
+    """
+    Qwen2-VL-2B → TensorRT-LLM INT4 양자화 변환 (Jetson Orin 전용).
+
+    Step 1: FP16 체크포인트를 INT4 weight-only 양자화로 변환
+    Step 2: TRT-LLM 엔진 빌드 (gemm_plugin float16)
+
+    메모리 효과:
+      FP32 원본  ~8 GB  → Jetson 8GB UMA 초과 (실행 불가)
+      INT4 변환  ~1 GB  → YOLO(0.5GB) + OS(1GB) 포함해도 여유
+    """
+    commands = [
+        (
+            "python -m tensorrt_llm.commands.convert_checkpoint "
+            "--model_dir Qwen/Qwen2-VL-2B-Instruct "
+            "--output_dir ./qwen2vl_ckpt "
+            "--dtype float16 "
+            "--int4_weight_only_quant"
+        ),
+        (
+            "trtllm-build "
+            "--checkpoint_dir ./qwen2vl_ckpt "
+            "--output_dir ./qwen2vl_engine "
+            "--gemm_plugin float16 "
+            "--max_batch_size 1 "
+            "--max_input_len 512 "
+            "--max_output_len 80"
+        ),
+    ]
+
+    step_labels = [
+        "[Step 1/2] FP16 → INT4 체크포인트 변환",
+        "[Step 2/2] TRT-LLM 엔진 빌드",
+    ]
+
+    for label, cmd in zip(step_labels, commands):
+        print(f"\n{label}")
+        print(f"  $ {cmd}")
+        ret = os.system(cmd)
+        if ret != 0:
+            print(f"\n❌ 명령 실패 (exit code {ret}). 위 로그를 확인하세요.")
+            sys.exit(ret)
+
+    print("\n✅ INT4 변환 완료: ./qwen2vl_engine")
+    print("   vlm_processor.py가 자동으로 TRT 모드로 전환됩니다.")
 
 
 def vlm_guide():
@@ -106,17 +154,20 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Jetson TensorRT 모델 변환 유틸리티"
     )
-    parser.add_argument("--yolo",      action="store_true", help="YOLOv8n TRT 변환")
-    parser.add_argument("--vlm-guide", action="store_true", help="Qwen2-VL 변환 가이드")
+    parser.add_argument("--yolo",      action="store_true", help="YOLOv8n TRT 변환 (FP16)")
+    parser.add_argument("--vlm-int4",  action="store_true", help="Qwen2-VL INT4 양자화 변환 (Jetson 전용)")
+    parser.add_argument("--vlm-guide", action="store_true", help="Qwen2-VL 변환 가이드 출력")
     parser.add_argument("--check",     action="store_true", help="Jetson 환경 확인")
-    parser.add_argument("--all",       action="store_true", help="전체 실행")
+    parser.add_argument("--all",       action="store_true", help="전체 실행 (check + yolo + vlm-int4)")
     args = parser.parse_args()
 
     if args.check or args.all:
         check_jetson()
     if args.yolo or args.all:
         convert_yolo()
-    if args.vlm_guide or args.all:
+    if args.vlm_int4 or args.all:
+        convert_vlm_int4()
+    if args.vlm_guide:
         vlm_guide()
     if not any(vars(args).values()):
         parser.print_help()
