@@ -304,7 +304,7 @@ def main(analysis_interval: int = 30):
         gst = (
             "nvarguscamerasrc sensor-id=0 ! "
             "video/x-raw(memory:NVMM),width=640,height=480,framerate=30/1 ! "
-            "nvvidconv flip-method=0 ! "
+            "nvvidconv flip-method=2 ! "
             "video/x-raw,format=BGRx ! "
             "videoconvert ! video/x-raw,format=BGR ! "
             "appsink drop=1"
