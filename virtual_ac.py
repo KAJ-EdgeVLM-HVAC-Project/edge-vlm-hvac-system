@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 [가상 에어컨 시스템 - Virtual AC System]
 

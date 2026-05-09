@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 [환경 프로파일]
 사용 공간 유형별 기본 파라미터 정의.

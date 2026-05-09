@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 [환경 선택 화면]
 시스템 시작 시 사용 공간 유형을 선택합니다.

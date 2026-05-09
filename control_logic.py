@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 """
 [제어 로직 모듈]
 decide_control / decide_window 함수를 main.py 와 scenario_runner.py 가
