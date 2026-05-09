@@ -31,8 +31,6 @@ decide_control / decide_window 함수를 main.py 와 scenario_runner.py 가
 ──────────────────────────────────────────────────────────────────
 """
 
-from __future__ import annotations
-
 from pid_controller import PIDController
 
 # FAN_VELOCITY: fan_speed(1~3) → 기류 속도(m/s) 매핑
