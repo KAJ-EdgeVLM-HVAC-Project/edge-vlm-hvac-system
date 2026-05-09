@@ -28,6 +28,11 @@ import user_display as udisplay
 
 load_dotenv()
 
+
+def _is_jetson() -> bool:
+    return os.path.exists("/etc/nv_tegra_release")
+
+
 LOG_FILE      = "hvac_system_performance.csv"
 SCENARIO_NAME = "Smart_Office_Initial_Test"
 
@@ -291,9 +296,20 @@ def main(analysis_interval: int = 30):
                 cv2.FONT_HERSHEY_SIMPLEX, 0.7, (200, 200, 200), 2)
 
     # macOS: CAP_AVFOUNDATION 백엔드 사용 (권한 안정성)
-    # Linux/Jetson: 기본 백엔드 사용
+    # Jetson CSI 카메라: nvarguscamerasrc GStreamer 파이프라인
+    # Linux 일반: 기본 백엔드
     if platform.system() == "Darwin":
         cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
+    elif _is_jetson():
+        gst = (
+            "nvarguscamerasrc sensor-id=0 ! "
+            "video/x-raw(memory:NVMM),width=640,height=480,framerate=30/1 ! "
+            "nvvidconv flip-method=0 ! "
+            "video/x-raw,format=BGRx ! "
+            "videoconvert ! video/x-raw,format=BGR ! "
+            "appsink drop=1"
+        )
+        cap = cv2.VideoCapture(gst, cv2.CAP_GSTREAMER)
     else:
         cap = cv2.VideoCapture(0)
     if not cap.isOpened():
