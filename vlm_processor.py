@@ -68,7 +68,8 @@ class VLMProcessor:
             return "mps", torch.float16
         if torch.cuda.is_available():
             return "cuda", torch.float16
-        return "cpu", torch.float32
+        # CPU도 FP16으로 로드 — FP32(~8GB) 대신 FP16(~4GB)으로 OOM 방지
+        return "cpu", torch.float16
 
     def __init__(self):
         self.device, self.dtype = self._select_device()
