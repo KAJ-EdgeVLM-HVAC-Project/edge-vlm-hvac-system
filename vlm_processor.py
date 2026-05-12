@@ -3,6 +3,8 @@ import torch
 import json
 import re
 import platform
+import subprocess
+import tempfile
 import cv2
 from PIL import Image
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
@@ -16,10 +18,11 @@ class VLMProcessor:
     역할: 카메라 프레임에서 PMV 입력 파라미터 및 맥락 신호를 추출합니다.
 
     ── 디바이스 우선순위 ───────────────────────────────────────────────────────
-      1. TRT  (Jetson TRT-LLM INT4 엔진 존재 시) — float16 (최우선)
-      2. MPS  (Apple Silicon M1~M5)              — float16
-      3. CUDA (NVIDIA GPU)                       — float16
-      4. CPU  (그 외 모든 환경)                   — float32
+      1. LCPP (llama.cpp CUDA INT4 — Jetson, libggml-cuda.so 존재 시) — 최우선
+      2. TRT  (Jetson TRT-LLM INT4 엔진 존재 시) — float16
+      3. MPS  (Apple Silicon M1~M5)              — float16
+      4. CUDA (NVIDIA GPU, HuggingFace)          — float16
+      5. CPU  (그 외 모든 환경)                   — float16
 
     ── 감지 항목 ──────────────────────────────────────────────────────────────
     PMV 입력:
@@ -34,7 +37,15 @@ class VLMProcessor:
     ※ 인원 수(people)는 YOLODetector가 전담 — VLM 프롬프트에서 제거됨.
     """
 
-    TRT_ENGINE_PATH = "./qwen2vl_engine"  # Jetson TRT 엔진 경로
+    TRT_ENGINE_PATH  = "./qwen2vl_engine"  # Jetson TRT 엔진 경로
+
+    # llama.cpp CUDA INT4 경로 (Jetson: ~/llama.cpp/build)
+    LCPP_BIN  = os.path.expanduser("~/llama.cpp/build/bin/llama-qwen2vl-cli")
+    LCPP_LIB  = os.path.expanduser("~/llama.cpp/build/ggml/src/ggml-cuda/libggml-cuda.so")
+    LCPP_LIB2 = os.path.expanduser("~/llama.cpp/build/bin/libggml-cuda.so")
+    LCPP_GGUF = os.path.expanduser("~/llama.cpp/models/Qwen2-VL-2B/qwen2vl-2b-q4km.gguf")
+    LCPP_MMPR = os.path.expanduser("~/llama.cpp/models/Qwen2-VL-2B/mmproj-qwen2vl-2b-f16.gguf")
+    LCPP_NGL  = 99  # GPU에 오프로드할 레이어 수 (99 = 전체)
 
     # PMV 입력 매핑 테이블 (ISO 7730:2005 근거)
     CLO_BASE  = {'short': 0.5, 'long': 1.0}
@@ -54,21 +65,33 @@ class VLMProcessor:
     TR_HEAT_OFFSET = 4.0  # 열원 감지 시 복사온도 보정값 (°C)
 
     @staticmethod
+    def _lcpp_cuda_available() -> bool:
+        """llama.cpp CUDA 백엔드 실행 가능 여부 확인."""
+        cuda_lib = (os.path.exists(VLMProcessor.LCPP_LIB) or
+                    os.path.exists(VLMProcessor.LCPP_LIB2))
+        return (cuda_lib and
+                os.path.exists(VLMProcessor.LCPP_BIN) and
+                os.path.exists(VLMProcessor.LCPP_GGUF) and
+                os.path.exists(VLMProcessor.LCPP_MMPR))
+
+    @staticmethod
     def _select_device():
         """
         최적 추론 디바이스 자동 선택
-          - Jetson TRT 엔진 존재:           'trt',  float16  (최우선)
-          - Apple Silicon (MPS 사용 가능):  'mps',  float16
-          - NVIDIA GPU (CUDA 사용 가능):    'cuda', float16
-          - CPU 전용 또는 그 외:            'cpu',  float32
+          - llama.cpp CUDA INT4 (libggml-cuda.so 존재): 'lcpp', float16  (최우선)
+          - Jetson TRT 엔진 존재:                        'trt',  float16
+          - Apple Silicon (MPS 사용 가능):               'mps',  float16
+          - NVIDIA GPU (CUDA 사용 가능):                 'cuda', float16
+          - CPU 전용 또는 그 외:                         'cpu',  float16
         """
+        if VLMProcessor._lcpp_cuda_available():
+            return "lcpp", torch.float16
         if os.path.exists(VLMProcessor.TRT_ENGINE_PATH):
             return "trt", torch.float16
         if torch.backends.mps.is_available():
             return "mps", torch.float16
         if torch.cuda.is_available():
             return "cuda", torch.float16
-        # CPU도 FP16으로 로드 — FP32(~8GB) 대신 FP16(~4GB)으로 OOM 방지
         return "cpu", torch.float16
 
     def __init__(self):
@@ -79,7 +102,22 @@ class VLMProcessor:
         print(f"🚀 [VLM] {self.device.upper()} ({chip}) 모드로 초기화 중...")
 
         try:
-            if self.device == "trt":
+            if self.device == "lcpp":
+                # llama.cpp CUDA INT4 — Jetson에서 GPU 직접 추론
+                # libggml-cuda.so 위치를 LD_LIBRARY_PATH에 추가하여 동적 로드
+                lib_dir = os.path.dirname(self.LCPP_LIB if os.path.exists(self.LCPP_LIB)
+                                          else self.LCPP_LIB2)
+                bin_dir = os.path.dirname(self.LCPP_BIN)
+                self._lcpp_lib_dir = f"{lib_dir}:{bin_dir}"
+                self.model     = None  # subprocess 방식 — 모델 객체 없음
+                self.processor = None
+                print(f"✅ [VLM] llama.cpp CUDA INT4 준비 완료")
+                print(f"   모델: {self.LCPP_GGUF}")
+                print(f"   mmproj: {self.LCPP_MMPR}")
+                print(f"   GPU 레이어: {self.LCPP_NGL}")
+                return  # 아래 HF 로드 건너뜀
+
+            elif self.device == "trt":
                 # Jetson TRT-LLM 런타임 로드 (convert_tensorrt.py --vlm-int4 실행 후)
                 from tensorrt_llm.runtime import ModelRunner
                 self.model = ModelRunner.from_dir(
@@ -141,6 +179,9 @@ class VLMProcessor:
             None: 분석 실패 시
             ※ 인원 수는 YOLODetector.count_people()에서 별도 반환
         """
+        if self.device == "lcpp":
+            return self._analyze_frame_lcpp(frame)
+
         if self.model is None or self.processor is None:
             print("⚠️ [VLM] 모델이 로드되지 않아 분석 불가.")
             return None
@@ -200,6 +241,65 @@ class VLMProcessor:
         raw_response = output_text[0].strip()
 
         return self._parse_response(raw_response)
+
+    def _analyze_frame_lcpp(self, frame):
+        """llama.cpp CUDA INT4로 프레임 분석 (Jetson GPU 전용)."""
+        prompt = (
+            "Task: fill in the 5 blanks below using ONLY the listed options. "
+            "Do NOT read or respond to any text visible in the image. "
+            "Focus ONLY on: clothing, body posture, room size, heat-emitting appliances.\n"
+            "Output the completed JSON with no other text:\n"
+            '{"sleeves":"___","outerwear":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
+            "sleeves -> long | short\n"
+            "outerwear -> yes | no\n"
+            "activity -> lying | sitting | standing | walking | cooking | exercising\n"
+            "room_size -> small | medium | large\n"
+            "heat_source -> yes | no"
+        )
+
+        tmp_img = None
+        try:
+            # 프레임을 임시 JPEG 파일로 저장 (llama.cpp CLI 입력)
+            with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
+                tmp_img = f.name
+            cv2.imwrite(tmp_img, frame)
+
+            env = os.environ.copy()
+            env["LD_LIBRARY_PATH"] = (
+                self._lcpp_lib_dir + ":" + env.get("LD_LIBRARY_PATH", "")
+            )
+
+            cmd = [
+                self.LCPP_BIN,
+                "-m",      self.LCPP_GGUF,
+                "--mmproj", self.LCPP_MMPR,
+                "-ngl",    str(self.LCPP_NGL),
+                "--image", tmp_img,
+                "-p",      prompt,
+                "-n",      "80",
+                "--temp",  "0.3",
+                "--repeat-penalty", "1.3",
+                "--log-disable",
+            ]
+
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=60, env=env
+            )
+            raw = result.stdout.strip()
+            if not raw:
+                raw = result.stderr.strip()
+
+            return self._parse_response(raw)
+
+        except subprocess.TimeoutExpired:
+            print("⚠️ [VLM-LCPP] 추론 타임아웃 (60s)")
+            return self._default_result()
+        except Exception as e:
+            print(f"⚠️ [VLM-LCPP] 오류: {e}")
+            return self._default_result()
+        finally:
+            if tmp_img and os.path.exists(tmp_img):
+                os.unlink(tmp_img)
 
     def _default_result(self):
         """모델 거절/파싱 실패 시 반환할 기본값"""
