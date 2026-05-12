@@ -40,7 +40,7 @@ class VLMProcessor:
     TRT_ENGINE_PATH  = "./qwen2vl_engine"  # Jetson TRT 엔진 경로
 
     # llama.cpp CUDA INT4 경로 (Jetson: ~/llama.cpp/build)
-    LCPP_BIN  = os.path.expanduser("~/llama.cpp/build/bin/llama-qwen2vl-cli")
+    LCPP_BIN  = os.path.expanduser("~/llama.cpp/build/bin/llama-mtmd-cli")
     LCPP_LIB  = os.path.expanduser("~/llama.cpp/build/ggml/src/ggml-cuda/libggml-cuda.so")
     LCPP_LIB2 = os.path.expanduser("~/llama.cpp/build/bin/libggml-cuda.so")
     LCPP_GGUF = os.path.expanduser("~/llama.cpp/models/Qwen2-VL-2B/qwen2vl-2b-q4km.gguf")
@@ -268,6 +268,8 @@ class VLMProcessor:
             env["LD_LIBRARY_PATH"] = (
                 self._lcpp_lib_dir + ":" + env.get("LD_LIBRARY_PATH", "")
             )
+            # Jetson 통합 메모리에서 CUDA VMM이 OOM을 유발 → cudaMalloc 방식으로 강제
+            env["GGML_CUDA_NO_VMM"] = "1"
 
             cmd = [
                 self.LCPP_BIN,
@@ -279,6 +281,7 @@ class VLMProcessor:
                 "-n",      "80",
                 "--temp",  "0.3",
                 "--repeat-penalty", "1.3",
+                "--no-warmup",       # warmup이 최대 해상도(1288×1288)로 OOM 유발
                 "--log-disable",
             ]
 
