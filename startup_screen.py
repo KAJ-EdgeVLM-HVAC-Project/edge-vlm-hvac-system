@@ -241,8 +241,11 @@ def show_and_select() -> EnvProfile:
         if event == cv2.EVENT_LBUTTONDOWN and hk:
             selected[0] = hk
 
-    cv2.namedWindow(WIN_NAME, cv2.WINDOW_AUTOSIZE)
-    cv2.waitKey(1)  # Qt 이벤트 루프 초기화 대기 (없으면 setMouseCallback NULL handler)
+    cv2.startWindowThread()  # Qt 이벤트 루프를 별도 스레드로 시작
+    cv2.namedWindow(WIN_NAME, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WIN_NAME, W, H)
+    for _ in range(5):   # Qt QWidget 완전 초기화 대기
+        cv2.waitKey(1)
     cv2.setMouseCallback(WIN_NAME, on_mouse)
 
     while selected[0] is None:
