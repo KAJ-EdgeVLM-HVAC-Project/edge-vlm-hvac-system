@@ -242,6 +242,7 @@ def show_and_select() -> EnvProfile:
             selected[0] = hk
 
     cv2.namedWindow(WIN_NAME, cv2.WINDOW_AUTOSIZE)
+    cv2.waitKey(1)  # Qt 이벤트 루프 초기화 대기 (없으면 setMouseCallback NULL handler)
     cv2.setMouseCallback(WIN_NAME, on_mouse)
 
     while selected[0] is None:
