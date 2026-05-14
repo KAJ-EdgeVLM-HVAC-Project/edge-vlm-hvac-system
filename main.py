@@ -1,5 +1,6 @@
 import cv2
 import os
+from pynput import keyboard as _kb
 import platform
 import queue
 import threading
@@ -27,6 +28,81 @@ import dashboard as dash
 import user_display as udisplay
 
 load_dotenv()
+
+
+def _build_vlm_window(vlm_data, vlm_time, analyzing: bool) -> "np.ndarray":
+    """VLM 분석 결과 표시 창 (480x320)."""
+    import numpy as np
+    from PIL import Image, ImageDraw, ImageFont
+    import platform, os
+
+    W, H = 520, 340
+    img  = Image.new("RGB", (W, H), (15, 15, 25))
+    draw = ImageDraw.Draw(img)
+
+    # 폰트
+    def _font(sz):
+        sys = platform.system()
+        cands = []
+        if sys == "Linux":
+            cands = ["/usr/share/fonts/truetype/nanum/NanumGothic.ttf",
+                     "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+                     "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"]
+        elif sys == "Darwin":
+            cands = ["/System/Library/Fonts/AppleSDGothicNeo.ttc"]
+        for p in cands:
+            try: return ImageFont.truetype(p, sz)
+            except: pass
+        return ImageFont.load_default()
+
+    f14 = _font(14); f12 = _font(12); f11 = _font(11)
+
+    # 헤더
+    draw.rectangle([(0,0),(W,36)], fill=(30,30,60))
+    draw.text((12, 9), "VLM Context", font=f14, fill=(180,200,255))
+    status_col = (80,220,120) if not analyzing else (255,200,60)
+    status_txt = "분석중..." if analyzing else ("완료" if vlm_data else "대기중")
+    draw.text((W-90, 11), status_txt, font=f12, fill=status_col)
+
+    y = 46
+    if vlm_time:
+        draw.text((12, y), f"마지막 분석: {vlm_time}", font=f11, fill=(140,140,160))
+        y += 20
+
+    if vlm_data:
+        raw = vlm_data.get("raw_response", "")
+        # raw JSON 표시 (최대 3줄)
+        draw.text((12, y), "[ Raw Output ]", font=f12, fill=(100,180,255))
+        y += 18
+        max_w = 58
+        for i, line in enumerate(raw.split("\n")[:4]):
+            if len(line) > max_w: line = line[:max_w] + "..."
+            draw.text((14, y), line, font=f11, fill=(200,200,180))
+            y += 15
+
+        y += 6
+        draw.line([(12, y), (W-12, y)], fill=(50,50,70))
+        y += 8
+
+        # 파싱 결과
+        draw.text((12, y), "[ Parsed ]", font=f12, fill=(100,180,255))
+        y += 18
+        fields = [
+            ("activity",    vlm_data.get("activity", "-")),
+            ("clo",         f"{vlm_data.get('clo', 0):.2f}"),
+            ("met",         f"{vlm_data.get('met', 0):.1f}"),
+            ("room_size",   vlm_data.get("room_size", "-")),
+            ("heat_source", vlm_data.get("heat_source", "-")),
+            ("outerwear",   vlm_data.get("outerwear", "-")),
+        ]
+        for k, v in fields:
+            draw.text((16, y), f"{k:<12}: {v}", font=f11, fill=(220,220,200))
+            y += 15
+            if y > H - 10:
+                break
+
+    return np.array(img)[:,:,::-1]  # RGB→BGR
+
 
 
 def _is_jetson() -> bool:
@@ -360,6 +436,8 @@ def main(analysis_interval: int = 30):
     last_people_count  = 0
     last_count_source  = "yolo"
     last_vlm_data      = None
+    last_vlm_time      = None   # 마지막 VLM 분석 완료 시각 문자열
+    vlm_analyzing      = False  # VLM 분석 중 여부
     out_temp, out_humid, out_weather, out_wind = 20.0, 50.0, "unknown", 0.0
     pm10, pm25, khai   = 0, 0, 0
     last_weather_fetch = 0.0
@@ -394,6 +472,18 @@ def main(analysis_interval: int = 30):
     OCC_PRED_INTERVAL_SEC = 60.0
 
     # ── 수동 제어 상태 ────────────────────────────────────────────────────────
+    _key_q: queue.Queue = queue.Queue()
+
+    def _on_press(key):
+        try:
+            _key_q.put(key.char)
+        except AttributeError:
+            pass
+
+    _kb_listener = _kb.Listener(on_press=_on_press)
+    _kb_listener.daemon = True
+    _kb_listener.start()
+
     manual_ctrl = {
         "enabled":     False,
         "power":       False,
@@ -537,6 +627,8 @@ def main(analysis_interval: int = 30):
         try:
             vlm_data = result_queue.get_nowait()
             last_vlm_data = vlm_data
+            last_vlm_time = datetime.now().strftime("%H:%M:%S")
+            vlm_analyzing = False
 
             if not yolo.available:
                 last_count_source = "vlm_fallback"
@@ -581,35 +673,44 @@ def main(analysis_interval: int = 30):
         )
         cv2.imshow("HVAC User", user_img)
 
+        # ── VLM Context 창 ───────────────────────────────────────────────
+        vlm_win = _build_vlm_window(last_vlm_data, last_vlm_time, vlm_analyzing)
+        cv2.imshow("VLM Context", vlm_win)
+
         # 첫 프레임: 창 위치 분리 (겹치지 않도록)
         if frame_count == 1:
             cv2.moveWindow("HVAC Operator", 0, 0)
             cv2.moveWindow("HVAC User", combined.shape[1] + 10, 0)
+            cv2.moveWindow("VLM Context", 0, combined.shape[0] + 40)
             cv2.setMouseCallback("HVAC User", _user_mouse_cb, pref_state)
 
         # ── 키 입력 처리 ──────────────────────────────────────────────────────
-        key = cv2.waitKey(1) & 0xFF
+        cv2.waitKey(1)
+        try:
+            ch = _key_q.get_nowait()
+        except queue.Empty:
+            ch = None
 
-        if key == ord("q"):
+        if ch == "q":
             stop_event.set()
             vlm_thread.join(timeout=5)
             break
 
-        elif key == ord("w"):
+        elif ch == "w":
             hvac.window_open = not hvac.window_open
             print(f"[창문] {'열림' if hvac.window_open else '닫힘'}")
 
-        elif key == ord("u"):
+        elif ch == "u":
             pref_state['value'] = min(PMV_PREF_MAX,
                                       round(pref_state['value'] + PMV_PREF_STEP, 1))
             print(f"[선호] 따뜻하게  오프셋={pref_state['value']:+.1f}")
 
-        elif key == ord("d"):
+        elif ch == "d":
             pref_state['value'] = max(-PMV_PREF_MAX,
                                       round(pref_state['value'] - PMV_PREF_STEP, 1))
             print(f"[선호] 시원하게  오프셋={pref_state['value']:+.1f}")
 
-        elif key == ord("s"):
+        elif ch == "s":
             # 즉시 VLM 분석 (수동 트리거)
             with frame_lock:
                 frame_copy = shared_frame_ref[0].copy()
@@ -626,8 +727,43 @@ def main(analysis_interval: int = 30):
                 )
                 save_log(log_row)
 
+        # ── 수동 제어 키 (env_override 상태와 무관하게 항상 동작) ─────────────
+        elif ch == "m":
+            manual_ctrl["enabled"] = not manual_ctrl["enabled"]
+            if manual_ctrl["enabled"]:
+                manual_ctrl["power"]       = hvac.is_on
+                manual_ctrl["mode"]        = hvac.mode or "cool"
+                manual_ctrl["target_temp"] = hvac.target_temp
+                manual_ctrl["fan_speed"]   = max(1, hvac.fan_speed)
+                print("[수동 모드 ON] 현재 설정 복사 완료")
+            else:
+                pid.reset()
+                print("[자동 모드 복귀]")
+
+        elif manual_ctrl["enabled"]:
+            if ch == "p":
+                manual_ctrl["power"] = not manual_ctrl["power"]
+                print(f"[수동] 전원 {'ON' if manual_ctrl['power'] else 'OFF'}")
+            elif ch == "c":
+                manual_ctrl["mode"]  = "cool"
+                manual_ctrl["power"] = True
+                print("[수동] 냉방 모드")
+            elif ch == "h":
+                manual_ctrl["mode"]  = "heat"
+                manual_ctrl["power"] = True
+                print("[수동] 난방 모드")
+            elif ch in ("=", "+"):
+                manual_ctrl["target_temp"] = min(30.0, manual_ctrl["target_temp"] + 1.0)
+                print(f"[수동] 설정온도 {manual_ctrl['target_temp']:.0f}°C")
+            elif ch == "-":
+                manual_ctrl["target_temp"] = max(16.0, manual_ctrl["target_temp"] - 1.0)
+                print(f"[수동] 설정온도 {manual_ctrl['target_temp']:.0f}°C")
+            elif ch == "f":
+                manual_ctrl["fan_speed"] = manual_ctrl["fan_speed"] % 3 + 1
+                print(f"[수동] 팬 속도 Fan {manual_ctrl['fan_speed']}")
+
         # ── 환경 오버라이드 키 ────────────────────────────────────────────────
-        elif key == ord("e"):
+        elif ch == "e":
             env_override["enabled"] = not env_override["enabled"]
             if env_override["enabled"]:
                 env_override["indoor_temp"]   = round(hvac.indoor_temp, 1)
@@ -641,53 +777,18 @@ def main(analysis_interval: int = 30):
         elif env_override["enabled"] and not manual_ctrl["enabled"]:
             sel_key = _ENV_VARS[env_override["selected"]]
             step    = _ENV_STEPS[sel_key]
-            if key == ord("["):
+            if ch == "[":
                 env_override["selected"] = (env_override["selected"] - 1) % len(_ENV_VARS)
                 print(f"[환경] 선택: {_ENV_LABEL[_ENV_VARS[env_override['selected']]]}")
-            elif key == ord("]"):
+            elif ch == "]":
                 env_override["selected"] = (env_override["selected"] + 1) % len(_ENV_VARS)
                 print(f"[환경] 선택: {_ENV_LABEL[_ENV_VARS[env_override['selected']]]}")
-            elif key in (ord("="), ord("+")):
+            elif ch in ("=", "+"):
                 env_override[sel_key] = round(env_override[sel_key] + step, 1)
                 print(f"[환경] {_ENV_LABEL[sel_key]} = {env_override[sel_key]}")
-            elif key == ord("-"):
+            elif ch == "-":
                 env_override[sel_key] = round(env_override[sel_key] - step, 1)
                 print(f"[환경] {_ENV_LABEL[sel_key]} = {env_override[sel_key]}")
-
-        # ── 수동 제어 키 ──────────────────────────────────────────────────────
-        elif key == ord("m"):
-            manual_ctrl["enabled"] = not manual_ctrl["enabled"]
-            if manual_ctrl["enabled"]:
-                manual_ctrl["power"]       = hvac.is_on
-                manual_ctrl["mode"]        = hvac.mode or "cool"
-                manual_ctrl["target_temp"] = hvac.target_temp
-                manual_ctrl["fan_speed"]   = max(1, hvac.fan_speed)
-                print("[수동 모드 ON] 현재 설정 복사 완료")
-            else:
-                pid.reset()
-                print("[자동 모드 복귀]")
-
-        elif manual_ctrl["enabled"]:
-            if key == ord("p"):
-                manual_ctrl["power"] = not manual_ctrl["power"]
-                print(f"[수동] 전원 {'ON' if manual_ctrl['power'] else 'OFF'}")
-            elif key == ord("c"):
-                manual_ctrl["mode"]  = "cool"
-                manual_ctrl["power"] = True
-                print("[수동] 냉방 모드")
-            elif key == ord("h"):
-                manual_ctrl["mode"]  = "heat"
-                manual_ctrl["power"] = True
-                print("[수동] 난방 모드")
-            elif key in (ord("="), ord("+")):
-                manual_ctrl["target_temp"] = min(30.0, manual_ctrl["target_temp"] + 1.0)
-                print(f"[수동] 설정온도 {manual_ctrl['target_temp']:.0f}°C")
-            elif key == ord("-"):
-                manual_ctrl["target_temp"] = max(16.0, manual_ctrl["target_temp"] - 1.0)
-                print(f"[수동] 설정온도 {manual_ctrl['target_temp']:.0f}°C")
-            elif key == ord("f"):
-                manual_ctrl["fan_speed"] = manual_ctrl["fan_speed"] % 3 + 1
-                print(f"[수동] 팬 속도 Fan {manual_ctrl['fan_speed']}")
 
     if use_camera:
         cap.release()

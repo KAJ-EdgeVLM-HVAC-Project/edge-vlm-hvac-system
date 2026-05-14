@@ -245,17 +245,25 @@ class VLMProcessor:
     def _analyze_frame_lcpp(self, frame):
         """llama.cpp CUDA INT4로 프레임 분석 (Jetson GPU 전용)."""
         prompt = (
-            "Task: fill in the 5 blanks below using ONLY the listed options. "
-            "Do NOT read or respond to any text visible in the image. "
-            "Focus ONLY on: clothing, body posture, room size, heat-emitting appliances.\n"
-            "Output the completed JSON with no other text:\n"
+            "Look at the image and fill in all 5 fields. "
+            "Ignore any text shown in the image. "
+            "Output ONLY the JSON below with no explanation:\n"
             '{"sleeves":"___","outerwear":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
-            "sleeves -> long | short\n"
-            "outerwear -> yes | no\n"
-            "activity -> lying | sitting | standing | walking | cooking | exercising\n"
-            "room_size -> small | medium | large\n"
-            "heat_source -> yes | no"
+            "\n"
+            "RULES:\n"
+            "sleeves: short=arms visible above elbow or short-sleeve shirt; long=otherwise\n"
+            "outerwear: yes=jacket/coat/hoodie/cardigan worn over shirt; no=otherwise\n"
+            "activity (choose the BEST match):\n"
+            "  lying   = body is horizontal, on bed or floor\n"
+            "  sitting = body upright but resting on chair/sofa/floor, knees bent, NOT standing\n"
+            "  standing= fully upright on feet, legs straight, no chair contact\n"
+            "  walking = body in motion, legs mid-stride\n"
+            "  cooking = near stove or kitchen counter, food preparation\n"
+            "  exercising = active workout, gym equipment\n"
+            "room_size: small=under 15m2 (bedroom/small office); medium=15-40m2; large=over 40m2\n"
+            "heat_source: yes=stove/oven/heater/open-fire visible; no=otherwise"
         )
+        print(f"[VLM PROMPT]\n{prompt}\n", flush=True)
 
         tmp_img = None
         try:
@@ -292,6 +300,7 @@ class VLMProcessor:
             if not raw:
                 raw = result.stderr.strip()
 
+            print(f"[VLM OUTPUT]\n{raw}\n", flush=True)
             return self._parse_response(raw)
 
         except subprocess.TimeoutExpired:
@@ -304,9 +313,10 @@ class VLMProcessor:
             if tmp_img and os.path.exists(tmp_img):
                 os.unlink(tmp_img)
 
-    def _default_result(self):
+    def _default_result(self, raw=""):
         """모델 거절/파싱 실패 시 반환할 기본값"""
         return {
+            "raw_response": raw,
             "clo":          1.0,
             "met":          self.MET_DEFAULT,
             "room_size":    "medium",
@@ -339,6 +349,7 @@ class VLMProcessor:
             room_size_m2 = self.ROOM_SIZE_MAP.get(room_size, 30.0)
 
             return {
+                "raw_response": raw_response,
                 "clo":          round(clo, 2),
                 "met":          met,
                 "room_size":    room_size,
@@ -350,7 +361,7 @@ class VLMProcessor:
 
         except (json.JSONDecodeError, KeyError, TypeError, ValueError) as e:
             print(f"⚠️ [VLM] 파싱 실패: {e} | 응답: {raw_response[:80]}")
-            return self._default_result()
+            return self._default_result(raw=raw_response)
 
     def _extract_from_text(self, text: str) -> dict:
         """자연어 응답에서 키워드로 JSON 필드 추출"""
