@@ -360,6 +360,18 @@ def main(analysis_interval: int = 30):
 
     initialize_csv()
 
+    # ── 로딩 화면 ─────────────────────────────────────────────────────────────
+    _load_img = np.zeros((300, 700, 3), dtype=np.uint8)
+    cv2.putText(_load_img, "VLM Model Loading...", (60, 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 1.2, (180, 160, 255), 2)
+    cv2.putText(_load_img, f"Environment: {env_profile.name}", (60, 160),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (160, 160, 160), 1)
+    cv2.putText(_load_img, "Please wait (10~30 sec)", (60, 220),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 180, 100), 1)
+    cv2.namedWindow("HVAC Operator", cv2.WINDOW_NORMAL)
+    cv2.imshow("HVAC Operator", _load_img)
+    cv2.waitKey(1)
+
     vlm         = VLMProcessor()
     weather     = WeatherService(lat=WEATHER_LAT, lon=WEATHER_LON)
     air_quality = AirQualityService(service_key=AIR_QUALITY_API_KEY,
@@ -864,6 +876,20 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
     print(f"  출력   : {output_dir}")
     print(f"  VLM 주기: {analysis_interval}초")
     print(f"{'='*60}\n")
+
+    # ── 로딩 화면 표시 ───────────────────────────────────────────────────────
+    _loading_win = "HVAC Video Analysis"
+    _load_img = np.zeros((300, 700, 3), dtype=np.uint8)
+    cv2.putText(_load_img, "VLM Model Loading...", (60, 100),
+                cv2.FONT_HERSHEY_SIMPLEX, 1.2, (180, 160, 255), 2)
+    cv2.putText(_load_img, os.path.basename(video_path), (60, 160),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (160, 160, 160), 1)
+    cv2.putText(_load_img, "Please wait (10~30 sec)", (60, 220),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 180, 100), 1)
+    cv2.namedWindow(_loading_win, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(_loading_win, 700, 300)
+    cv2.imshow(_loading_win, _load_img)
+    cv2.waitKey(1)
 
     vlm    = VLMProcessor()
     engine = ThermalEngine()
