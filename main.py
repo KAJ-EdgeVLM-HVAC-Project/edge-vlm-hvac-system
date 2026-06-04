@@ -29,7 +29,7 @@ from pid_controller import PIDController
 from sensor_interface import SensorInterface
 from control_logic import decide_control, decide_window, FAN_VELOCITY
 from env_profiles import PROFILES, EnvProfile
-from startup_screen import show_and_select
+from startup_screen import show_and_select, StartupResult
 import dashboard as dash
 import user_display as udisplay
 
@@ -345,8 +345,18 @@ def process_vlm_result(vlm_data, people_count, count_source,
 # ── 메인 ──────────────────────────────────────────────────────────────────────
 
 def main(analysis_interval: int = 30):
-    # ── 환경 선택 ─────────────────────────────────────────────────────────────
-    env_profile = show_and_select()
+    # ── 시작 화면 (모드 + 환경 선택) ──────────────────────────────────────────
+    startup = show_and_select()
+
+    # 영상 모드로 선택됐으면 video_mode로 넘김
+    if startup.mode == 'video' and startup.video_path:
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        base = os.path.splitext(os.path.basename(startup.video_path))[0]
+        out_dir = os.path.join("results", f"{base}_{ts}")
+        video_mode(startup.video_path, analysis_interval, out_dir)
+        return
+
+    env_profile = startup.profile
 
     initialize_csv()
 
@@ -683,7 +693,10 @@ def main(analysis_interval: int = 30):
         cam_h   = display_frame.shape[0]
         panel   = dash.build(cam_h, hvac, sm,
                              out_temp, out_humid, out_weather, out_wind,
-                             display_state, manual_ctrl, env_override)
+                             display_state, manual_ctrl, env_override,
+                             vlm_data=last_vlm_data,
+                             vlm_time=last_vlm_time,
+                             vlm_analyzing=vlm_analyzing)
         panel_h = panel.shape[0]
         if cam_h < panel_h:
             pad        = np.zeros((panel_h - cam_h, display_frame.shape[1], 3), dtype=np.uint8)
@@ -693,22 +706,17 @@ def main(analysis_interval: int = 30):
         combined = np.hstack([frame_disp, panel])
         cv2.imshow("HVAC Operator", combined)
 
-        # ── 사용자 인터페이스 창 렌더링 ───────────────────────────────────────
+        # ── 사용자 인터페이스 창 ──────────────────────────────────────────────
         user_img = udisplay.build(
             hvac, sm, display_state,
             pref_state['value'], pmv_history, occ_pred, out_temp,
         )
         cv2.imshow("HVAC User", user_img)
 
-        # ── VLM Context 창 ───────────────────────────────────────────────
-        vlm_win = _build_vlm_window(last_vlm_data, last_vlm_time, vlm_analyzing)
-        cv2.imshow("VLM Context", vlm_win)
-
-        # 첫 프레임: 창 위치 분리 (겹치지 않도록)
+        # 첫 프레임: 창 위치 분리
         if frame_count == 1:
             cv2.moveWindow("HVAC Operator", 0, 0)
             cv2.moveWindow("HVAC User", combined.shape[1] + 10, 0)
-            cv2.moveWindow("VLM Context", 0, combined.shape[0] + 40)
             cv2.setMouseCallback("HVAC User", _user_mouse_cb, pref_state)
 
         # ── 키 입력 처리 ──────────────────────────────────────────────────────
@@ -985,6 +993,40 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
             rb_watts      = POWER_W.get(RB_FAN, 0) if (people_count > 0) else 0
             energy_rb_wh += rb_watts * dt_h
 
+            # ── 실시간 화면 표시 ─────────────────────────────────────────────
+            disp = frame.copy()
+            vt   = int(video_time)
+            pct  = video_time / duration_sec * 100 if duration_sec > 0 else 0
+
+            # 진행 바
+            bar_w = int(disp.shape[1] * pct / 100)
+            cv2.rectangle(disp, (0, disp.shape[0]-6), (disp.shape[1], disp.shape[0]), (40,40,40), -1)
+            cv2.rectangle(disp, (0, disp.shape[0]-6), (bar_w, disp.shape[0]), (80,160,255), -1)
+
+            # 오버레이 정보
+            overlay_lines = [
+                f"Video: {vt//60:02d}:{vt%60:02d} / {int(duration_sec)//60:02d}:{int(duration_sec)%60:02d}  ({pct:.0f}%)",
+                f"People: {people_count}  |  AI PMV: {ai_pmv:+.2f}  |  RB PMV: {rb_pmv:+.2f}",
+                f"AI Energy: {energy_ai_wh:.2f} Wh  |  RB Energy: {energy_rb_wh:.2f} Wh",
+            ]
+            if last_vlm_data and last_vlm_data.get('activity', '-') != '-':
+                overlay_lines.append(
+                    f"VLM: {last_vlm_data.get('activity','-')}  "
+                    f"clo={last_vlm_data.get('clo',0):.2f}  "
+                    f"met={last_vlm_data.get('met',0):.1f}"
+                )
+            for li, line in enumerate(overlay_lines):
+                cv2.putText(disp, line, (10, 28 + li * 26),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.55, (0,0,0), 3)
+                cv2.putText(disp, line, (10, 28 + li * 26),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.55, (220,220,80), 1)
+
+            cv2.imshow("HVAC Video Analysis", disp)
+            if frame_idx == 0:
+                cv2.moveWindow("HVAC Video Analysis", 0, 0)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
             # ── VLM 분석 시점에만 CSV 로깅 (용량 절약) ───────────────────────
             if frame_idx % vlm_every_n == 0:
                 row = {
@@ -1030,6 +1072,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
         print("\n[중단됨] 지금까지 분석된 데이터로 리포트 생성합니다...")
     finally:
         cap.release()
+        cv2.destroyWindow("HVAC Video Analysis")
 
     print(f"\n분석 완료: {frame_idx} 프레임 처리 / {logged_rows} 행 기록")
     print(f"CSV 저장: {csv_path}\n")
