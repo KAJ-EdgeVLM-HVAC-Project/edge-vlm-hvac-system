@@ -1,6 +1,12 @@
 import cv2
 import os
-from pynput import keyboard as _kb
+try:
+    import platform as _plat
+    from pynput import keyboard as _kb
+    _PYNPUT_OK = _plat.system() != "Darwin"  # 맥에서는 HIToolbox 스레드 충돌로 비활성화
+except Exception:
+    _kb = None
+    _PYNPUT_OK = False
 import platform
 import queue
 import threading
@@ -375,7 +381,27 @@ def main(analysis_interval: int = 30):
     # Jetson CSI 카메라: nvarguscamerasrc GStreamer 파이프라인
     # Linux 일반: 기본 백엔드
     if platform.system() == "Darwin":
-        cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
+        import subprocess, re as _re
+        cap = None
+        # system_profiler로 카메라 목록 조회 → FaceTime/내장 카메라 인덱스 우선
+        try:
+            out = subprocess.check_output(
+                ["system_profiler", "SPCameraDataType"], timeout=5, text=True
+            )
+            # 내장 카메라가 리스트에서 몇 번째인지 파악
+            names = _re.findall(r'^\s{4}(\S[^:]+):\s*$', out, _re.MULTILINE)
+            # iPhone/아이폰이 아닌 첫 번째 카메라 = 내장 카메라
+            builtin_idx = next(
+                (i for i, n in enumerate(names) if "iPhone" not in n and "아이폰" not in n),
+                0
+            )
+            cap = cv2.VideoCapture(builtin_idx, cv2.CAP_AVFOUNDATION)
+            if not cap.isOpened():
+                cap = None
+        except Exception:
+            pass
+        if cap is None:
+            cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
     elif _is_jetson():
         gst = (
             "nvarguscamerasrc sensor-id=0 ! "
@@ -480,9 +506,10 @@ def main(analysis_interval: int = 30):
         except AttributeError:
             pass
 
-    _kb_listener = _kb.Listener(on_press=_on_press)
-    _kb_listener.daemon = True
-    _kb_listener.start()
+    if _PYNPUT_OK:
+        _kb_listener = _kb.Listener(on_press=_on_press)
+        _kb_listener.daemon = True
+        _kb_listener.start()
 
     manual_ctrl = {
         "enabled":     False,
@@ -795,11 +822,265 @@ def main(analysis_interval: int = 30):
     cv2.destroyAllWindows()
 
 
+def video_mode(video_path: str, analysis_interval: int, output_dir: str):
+    """
+    영상 파일 분석 모드 — 논문/발표용 데이터 생성.
+
+    mp4/avi 등 영상 파일을 프레임별로 처리해 AI 제어 결과와
+    룰베이스 베이스라인을 동시에 계산하고 CSV·그래프·요약을 자동 저장합니다.
+
+    출력 구조 (output_dir/):
+      analysis_log.csv          : 프레임별 전체 로그 (AI + 룰베이스)
+      01_pmv_comparison.png     : PMV 시계열 비교
+      02_indoor_temp.png        : 실내온도 비교
+      03_energy_cumulative.png  : 누적 에너지 소비
+      04_energy_bar.png         : 총 에너지 절감 막대
+      05_comfort_rate.png       : 쾌적율 파이차트
+      06_activity_distribution.png : VLM 활동 분포
+      summary.txt               : 핵심 수치 요약
+    """
+    import report_generator
+
+    if not os.path.exists(video_path):
+        print(f"[Error] 영상 파일 없음: {video_path}")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+    csv_path = os.path.join(output_dir, "analysis_log.csv")
+
+    # ── 컴포넌트 초기화 ──────────────────────────────────────────────────────
+    print(f"\n{'='*60}")
+    print(f"  영상 분석 모드")
+    print(f"  파일   : {video_path}")
+    print(f"  출력   : {output_dir}")
+    print(f"  VLM 주기: {analysis_interval}초")
+    print(f"{'='*60}\n")
+
+    vlm    = VLMProcessor()
+    engine = ThermalEngine()
+    pid_ai = PIDController(kp=0.8, ki=0.05, kd=0.3)
+    pid_rb = PIDController(kp=0.8, ki=0.05, kd=0.3)
+    yolo   = YOLODetector(imgsz=320, conf=0.35)
+    hvac_ai = HVACSimulator(room_size=ROOM_SIZE_M2)
+    hvac_rb = HVACSimulator(room_size=ROOM_SIZE_M2)  # 룰베이스 전용 시뮬레이터
+    energy_ai_wh = 0.0
+    energy_rb_wh = 0.0
+
+    # ── 룰베이스 상수 (VLM 없이 고정값 사용) ────────────────────────────────
+    RB_CLO      = 1.0    # 긴팔 기본
+    RB_MET      = 1.2    # 기립 수준
+    RB_SETPOINT = 24.0   # 고정 설정 온도 (°C)
+    RB_FAN      = 2      # 재실 시 Fan2 고정
+
+    POWER_W = {0: 0, 1: 800, 2: 1200, 3: 1600}
+
+    # ── 영상 열기 ─────────────────────────────────────────────────────────────
+    cap = cv2.VideoCapture(video_path)
+    fps          = cap.get(cv2.CAP_PROP_FPS) or 30.0
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    duration_sec = total_frames / fps
+    vlm_every_n  = max(1, int(fps * analysis_interval))
+
+    print(f"  FPS: {fps:.1f}  |  총 {total_frames} 프레임  |  {duration_sec:.1f}초")
+    print(f"  VLM 분석 주기: {vlm_every_n} 프레임마다 (≈{analysis_interval}초)\n")
+
+    # ── CSV 헤더 ─────────────────────────────────────────────────────────────
+    columns = [
+        "video_time_sec", "frame_number",
+        # VLM 출력
+        "vlm_activity", "vlm_sleeves", "vlm_outerwear",
+        "vlm_room_size", "vlm_heat_source", "vlm_raw",
+        # 공통 입력
+        "outdoor_temp", "outdoor_humid", "people_count",
+        # AI 제어
+        "ai_clo", "ai_met",
+        "ai_pmv", "ai_comfort_status",
+        "ai_hvac_on", "ai_target_temp", "ai_fan_speed", "ai_mode",
+        "ai_indoor_temp", "ai_indoor_humid",
+        "ai_energy_wh",
+        # 룰베이스 베이스라인
+        "rb_clo", "rb_met",
+        "rb_pmv", "rb_comfort_status",
+        "rb_hvac_on", "rb_target_temp", "rb_fan_speed",
+        "rb_indoor_temp", "rb_indoor_humid",
+        "rb_energy_wh",
+    ]
+    pd.DataFrame(columns=columns).to_csv(csv_path, index=False)
+
+    # ── 상태 변수 ─────────────────────────────────────────────────────────────
+    last_vlm_data   = None
+    out_temp        = 20.0   # 외기 온도 (날씨 API 없이 고정, 추후 연동 가능)
+    out_humid       = 50.0
+    last_tick_time  = None   # 에너지 계산용
+    frame_idx       = 0
+    logged_rows     = 0
+
+    hvac_ai.set_room(ROOM_SIZE_M2, False)
+    hvac_rb.set_room(ROOM_SIZE_M2, False)
+
+    print("분석 시작... (Ctrl+C로 중단 가능)\n")
+
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+
+            video_time = frame_idx / fps
+
+            # ── YOLO 인원 감지 (매 3초마다) ─────────────────────────────────
+            if frame_idx % max(1, int(fps * 3)) == 0:
+                people_count = yolo.count_people(frame) if yolo.available else 1
+                people_count = max(0, people_count)
+
+            # ── VLM 분석 (analysis_interval마다) ────────────────────────────
+            if frame_idx % vlm_every_n == 0:
+                print(f"  [VLM] {video_time:.1f}s / {duration_sec:.1f}s  "
+                      f"({video_time/duration_sec*100:.0f}%)  "
+                      f"인원: {people_count}명", flush=True)
+                last_vlm_data = vlm.analyze_frame(frame)
+
+            # VLM 결과 없으면 기본값
+            if last_vlm_data is None:
+                last_vlm_data = vlm._default_result()
+
+            # ── 에너지 시간 계산 (1/fps 초) ──────────────────────────────────
+            dt_h = (1.0 / fps) / 3600.0
+
+            # ── AI 제어 계산 ─────────────────────────────────────────────────
+            ai_clo = last_vlm_data["clo"]
+            ai_met = last_vlm_data["met"]
+
+            ai_in_t, ai_in_h = hvac_ai.indoor_temp, hvac_ai.indoor_humid
+            ai_vel   = FAN_VELOCITY.get(hvac_ai.fan_speed, 0.1)
+            ai_pmv   = engine.calculate_pmv(ai_in_t, ai_in_t, ai_in_h, ai_vel, ai_met, ai_clo)
+            ai_comfort = engine.get_comfort_status(ai_pmv)
+
+            ai_power, ai_tgt, ai_fan, ai_mode = decide_control(
+                ai_pmv, people_count, pid_ai,
+                hvac_ai.is_on, hvac_ai.mode,
+                dt=1.0 / fps, current_fan=hvac_ai.fan_speed,
+            )
+            if ai_power is True:
+                hvac_ai.set_control(power=True, target=ai_tgt, fan=ai_fan, mode=ai_mode)
+            elif ai_power is False:
+                hvac_ai.set_control(power=False, target=hvac_ai.target_temp, fan=1)
+            hvac_ai.simulate_step(out_temp, out_humid, people_count)
+
+            ai_watts      = POWER_W.get(hvac_ai.fan_speed, 0) if hvac_ai.is_on else 0
+            energy_ai_wh += ai_watts * dt_h
+
+            # ── 룰베이스 계산 ─────────────────────────────────────────────────
+            rb_in_t, rb_in_h = hvac_rb.indoor_temp, hvac_rb.indoor_humid
+            rb_vel   = FAN_VELOCITY.get(RB_FAN, 0.3)
+            rb_pmv   = engine.calculate_pmv(rb_in_t, rb_in_t, rb_in_h, rb_vel, RB_MET, RB_CLO)
+            rb_comfort = engine.get_comfort_status(rb_pmv)
+
+            if people_count > 0:
+                hvac_rb.set_control(power=True, target=RB_SETPOINT, fan=RB_FAN, mode="cool")
+            else:
+                hvac_rb.set_control(power=False, target=RB_SETPOINT, fan=1)
+            hvac_rb.simulate_step(out_temp, out_humid, people_count)
+
+            rb_watts      = POWER_W.get(RB_FAN, 0) if (people_count > 0) else 0
+            energy_rb_wh += rb_watts * dt_h
+
+            # ── VLM 분석 시점에만 CSV 로깅 (용량 절약) ───────────────────────
+            if frame_idx % vlm_every_n == 0:
+                row = {
+                    "video_time_sec":  round(video_time, 2),
+                    "frame_number":    frame_idx,
+                    "vlm_activity":    last_vlm_data.get("activity", "-"),
+                    "vlm_sleeves":     last_vlm_data.get("sleeves", "-"),
+                    "vlm_outerwear":   last_vlm_data.get("outerwear", "-"),
+                    "vlm_room_size":   last_vlm_data.get("room_size", "-"),
+                    "vlm_heat_source": last_vlm_data.get("heat_source", "-"),
+                    "vlm_raw":         str(last_vlm_data.get("raw_response", ""))[:200],
+                    "outdoor_temp":    out_temp,
+                    "outdoor_humid":   out_humid,
+                    "people_count":    people_count,
+                    "ai_clo":          ai_clo,
+                    "ai_met":          ai_met,
+                    "ai_pmv":          ai_pmv,
+                    "ai_comfort_status": ai_comfort,
+                    "ai_hvac_on":      hvac_ai.is_on,
+                    "ai_target_temp":  hvac_ai.target_temp,
+                    "ai_fan_speed":    hvac_ai.fan_speed,
+                    "ai_mode":         hvac_ai.mode,
+                    "ai_indoor_temp":  round(hvac_ai.indoor_temp, 2),
+                    "ai_indoor_humid": round(hvac_ai.indoor_humid, 1),
+                    "ai_energy_wh":    round(energy_ai_wh, 4),
+                    "rb_clo":          RB_CLO,
+                    "rb_met":          RB_MET,
+                    "rb_pmv":          rb_pmv,
+                    "rb_comfort_status": rb_comfort,
+                    "rb_hvac_on":      people_count > 0,
+                    "rb_target_temp":  RB_SETPOINT,
+                    "rb_fan_speed":    RB_FAN if people_count > 0 else 0,
+                    "rb_indoor_temp":  round(hvac_rb.indoor_temp, 2),
+                    "rb_indoor_humid": round(hvac_rb.indoor_humid, 1),
+                    "rb_energy_wh":    round(energy_rb_wh, 4),
+                }
+                pd.DataFrame([row]).to_csv(csv_path, mode="a", index=False, header=False)
+                logged_rows += 1
+
+            frame_idx += 1
+
+    except KeyboardInterrupt:
+        print("\n[중단됨] 지금까지 분석된 데이터로 리포트 생성합니다...")
+    finally:
+        cap.release()
+
+    print(f"\n분석 완료: {frame_idx} 프레임 처리 / {logged_rows} 행 기록")
+    print(f"CSV 저장: {csv_path}\n")
+
+    # ── 리포트 생성 ───────────────────────────────────────────────────────────
+    if logged_rows >= 2:
+        report_generator.generate(csv_path, output_dir)
+    else:
+        print("[Report] 데이터 부족 — 최소 2개 VLM 분석 결과 필요")
+
+
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="VLM 기반 지능형 HVAC 제어 시스템")
+    parser = argparse.ArgumentParser(
+        description="VLM 기반 지능형 HVAC 제어 시스템",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+실행 예시:
+  실시간 카메라:
+    python main.py
+    python main.py --interval 15
+
+  영상 파일 분석 (논문/발표용):
+    python main.py --video indoor.mp4
+    python main.py --video indoor.mp4 --interval 10 --output results/my_test
+        """,
+    )
     parser.add_argument(
         "--interval", type=int, default=30,
-        help="VLM 분석 주기(초)  기본:30 / Mac M-시리즈:10~15 / Jetson:5~10",
+        help="VLM 분석 주기(초)  기본:30 / Mac:10~15 / Jetson:5~10",
+    )
+    parser.add_argument(
+        "--video", type=str, default=None,
+        metavar="PATH",
+        help="분석할 영상 파일 경로 (.mp4 / .avi 등). 지정 시 영상 분석 모드로 실행.",
+    )
+    parser.add_argument(
+        "--output", type=str, default=None,
+        metavar="DIR",
+        help="결과 저장 폴더 (기본: results/video_분석시각/)",
     )
     args = parser.parse_args()
-    main(analysis_interval=args.interval)
+
+    if args.video:
+        if args.output is None:
+            ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+            base = os.path.splitext(os.path.basename(args.video))[0]
+            args.output = os.path.join("results", f"{base}_{ts}")
+        video_mode(
+            video_path=args.video,
+            analysis_interval=args.interval,
+            output_dir=args.output,
+        )
+    else:
+        main(analysis_interval=args.interval)
