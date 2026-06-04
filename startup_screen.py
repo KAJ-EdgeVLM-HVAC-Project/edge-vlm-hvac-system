@@ -241,7 +241,8 @@ def _find_videos() -> list[str]:
     return sorted(out)
 
 
-def _render_filepicker(files: list[str], cursor: int, typed: str) -> np.ndarray:
+def _render_filepicker(files: list[str], cursor: int, typed: str,
+                       error: str = '') -> np.ndarray:
     img  = Image.new('RGB', (W, H), BG)
     draw = ImageDraw.Draw(img)
 
@@ -289,10 +290,13 @@ def _render_filepicker(files: list[str], cursor: int, typed: str) -> np.ndarray:
     # 직접 입력 칸
     input_y = LIST_Y + ROW_H * MAX_ROWS + 20
     draw.text((16, input_y), '직접 입력:', font=_f(14), fill=C_SUB)
+    border_col = (220, 60, 60) if error else BORDER_HI
     _rrect(draw, 100, input_y - 4, W - 16, input_y + 26, 6,
-           BG_CARD, BORDER_HI, width=1)
-    display_text = typed[-60:] if len(typed) > 60 else typed
+           BG_CARD, border_col, width=1)
+    display_text = typed[-68:] if len(typed) > 68 else typed
     draw.text((108, input_y), display_text + '|', font=_f(14), fill=C_WHITE)
+    if error:
+        draw.text((16, input_y + 28), error, font=_f(12), fill=(220, 80, 80))
 
     # 힌트
     hint_y = H - 44
@@ -309,6 +313,7 @@ def _select_video() -> Optional[str]:
     files  = _find_videos()
     cursor = [0]
     typed  = ['']
+    error  = ['']
 
     WIN = 'Smart HVAC - 영상 파일 선택'
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
@@ -317,7 +322,7 @@ def _select_video() -> Optional[str]:
         cv2.waitKey(1)
 
     while True:
-        cv2.imshow(WIN, _render_filepicker(files, cursor[0], typed[0]))
+        cv2.imshow(WIN, _render_filepicker(files, cursor[0], typed[0], error[0]))
         k = cv2.waitKey(50) & 0xFF
 
         if k == 27:                         # ESC → 취소
@@ -325,14 +330,13 @@ def _select_video() -> Optional[str]:
             return None
 
         elif k == 13 or k == 10:            # Enter → 확인
-            # 직접 입력 우선
             if typed[0].strip():
-                p = typed[0].strip()
+                p = typed[0].strip().strip("'\"")
                 if os.path.isfile(p):
                     cv2.destroyWindow(WIN)
                     return p
                 else:
-                    typed[0] = ''           # 잘못된 경로 → 초기화
+                    error[0] = f'파일을 찾을 수 없음: {p[-50:]}'
             elif files:
                 cv2.destroyWindow(WIN)
                 return files[cursor[0]]
@@ -345,6 +349,7 @@ def _select_video() -> Optional[str]:
 
         elif k == 8 or k == 127:            # Backspace
             typed[0] = typed[0][:-1]
+            error[0] = ''
 
         elif k == 22:                       # Ctrl+V
             pasted = _clipboard_paste()
