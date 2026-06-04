@@ -63,6 +63,26 @@ def _f(size: int, bold: bool = False):
     return ImageFont.load_default()
 
 
+def _clipboard_paste() -> str:
+    """클립보드 내용 읽기 — 플랫폼별 처리"""
+    try:
+        if platform.system() == 'Darwin':
+            import subprocess
+            return subprocess.check_output(['pbpaste'], text=True).strip()
+        else:
+            import subprocess
+            for cmd in [['xclip', '-o', '-selection', 'clipboard'],
+                        ['xsel', '--clipboard', '--output']]:
+                try:
+                    return subprocess.check_output(cmd, text=True,
+                                                   stderr=subprocess.DEVNULL).strip()
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return ''
+
+
 def _cv(img: Image.Image) -> np.ndarray:
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
@@ -278,7 +298,7 @@ def _render_filepicker(files: list[str], cursor: int, typed: str) -> np.ndarray:
     hint_y = H - 44
     draw.rectangle([(0, hint_y - 6), (W, H)], fill=(22, 18, 38))
     _center(draw, W//2, hint_y,
-            '↑↓: 선택   Enter: 확인   ESC: 뒤로   파일 경로 직접 타이핑 가능',
+            '↑↓: 선택   Enter: 확인   ESC: 뒤로   Ctrl+V: 경로 붙여넣기',
             _f(12), C_HINT)
 
     return _cv(img)
@@ -325,6 +345,11 @@ def _select_video() -> Optional[str]:
 
         elif k == 8 or k == 127:            # Backspace
             typed[0] = typed[0][:-1]
+
+        elif k == 22:                       # Ctrl+V
+            pasted = _clipboard_paste()
+            if pasted:
+                typed[0] += pasted
 
         elif 32 <= k <= 126:                # 출력 가능 ASCII
             typed[0] += chr(k)
