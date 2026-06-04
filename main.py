@@ -720,11 +720,12 @@ def main(analysis_interval: int = 30):
             cv2.setMouseCallback("HVAC User", _user_mouse_cb, pref_state)
 
         # ── 키 입력 처리 ──────────────────────────────────────────────────────
-        cv2.waitKey(1)
+        cv_key = cv2.waitKey(1) & 0xFF
         try:
             ch = _key_q.get_nowait()
         except queue.Empty:
-            ch = None
+            # pynput 비활성(맥) 시 cv2.waitKey fallback
+            ch = chr(cv_key) if cv_key not in (0, 255) else None
 
         if ch == "q":
             stop_event.set()
