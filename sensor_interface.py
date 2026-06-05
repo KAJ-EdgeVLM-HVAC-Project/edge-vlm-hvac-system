@@ -5,11 +5,17 @@
     MODE = 'simulate' → HVACSimulator 가상값 사용
 
 Jetson 이전 시 이 파일만 수정하면 됨:
+    MODE = 'sht31'   → I2C SHT31 온습도 센서 (I2C 버스7, 주소 0x44)
     MODE = 'dht22'   → GPIO DHT22 온습도 센서
     MODE = 'bme280'  → I2C BME280 온습도+기압 센서
 
 나머지 모든 코드(main.py, thermal_engine.py 등)는 수정 불필요.
 """
+import platform as _platform
+
+def _is_jetson() -> bool:
+    return _platform.machine() == "aarch64" and \
+           __import__("os").path.exists("/etc/nv_tegra_release")
 
 
 class SensorInterface:
@@ -18,16 +24,19 @@ class SensorInterface:
 
     ── 지원 모드 ─────────────────────────────────────────────────────────────
     'simulate' : HVACSimulator 가상값 (기본, 노트북 개발용)
+    'sht31'    : I2C SHT31 온습도 센서 (Jetson: 버스7, 주소 0x44)
     'dht22'    : Adafruit DHT22 GPIO 센서 (Jetson 배선 필요)
     'bme280'   : Adafruit BME280 I2C 센서 (Jetson 배선 필요)
 
-    ── Jetson 하드웨어 배선 예시 ─────────────────────────────────────────────
-    DHT22:  VCC→3.3V, GND→GND, DATA→GPIO4 (GPIO_PIN 변수로 지정)
-    BME280: VCC→3.3V, GND→GND, SDA→I2C_SDA, SCL→I2C_SCL
+    ── Jetson 하드웨어 배선 ──────────────────────────────────────────────────
+    SHT31: VCC→핀1(3.3V), GND→핀6, SDA→핀3, SCL→핀5  (I2C 버스7, 0x44)
     """
 
-    MODE     = "simulate"   # ← Jetson 이전 시 'dht22' 또는 'bme280'으로 변경
-    GPIO_PIN = 4            # DHT22 연결 GPIO 핀 번호 (Jetson 배선에 맞춰 수정)
+    MODE     = "sht31" if _is_jetson() else "simulate"
+    GPIO_PIN = 4
+
+    SHT31_BUS  = 7     # Jetson Orin Nano Super 40핀 헤더 I2C 버스
+    SHT31_ADDR = 0x44  # ADDR 핀 Low 기본값
 
     def __init__(self, simulator=None):
         """
@@ -50,6 +59,25 @@ class SensorInterface:
             if self._sim is not None:
                 self._last_temp  = self._sim.indoor_temp
                 self._last_humid = self._sim.indoor_humid
+            return self._last_temp, self._last_humid
+
+        elif self.MODE == "sht31":
+            try:
+                import smbus2
+                bus = smbus2.SMBus(self.SHT31_BUS)
+                # 단발 측정 명령: High Repeatability, Clock Stretching Off
+                bus.write_i2c_block_data(self.SHT31_ADDR, 0x24, [0x00])
+                import time as _t; _t.sleep(0.02)
+                data = bus.read_i2c_block_data(self.SHT31_ADDR, 0x00, 6)
+                bus.close()
+                raw_temp  = (data[0] << 8) | data[1]
+                raw_humid = (data[3] << 8) | data[4]
+                temp  = -45.0 + 175.0 * raw_temp  / 65535.0
+                humid =         100.0 * raw_humid / 65535.0
+                self._last_temp  = round(temp,  1)
+                self._last_humid = round(min(max(humid, 0.0), 100.0), 1)
+            except Exception as e:
+                print(f"[Sensor] SHT31 읽기 실패: {e} — 이전 값 유지")
             return self._last_temp, self._last_humid
 
         # ── Jetson DHT22 (아래 주석 해제 후 사용) ────────────────────────────
