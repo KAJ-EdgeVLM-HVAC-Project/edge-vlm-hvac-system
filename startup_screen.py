@@ -12,6 +12,11 @@ import numpy as np
 import platform
 import os
 import glob
+
+def _is_jetson() -> bool:
+    return platform.machine() == "aarch64" and os.path.exists("/etc/nv_tegra_release")
+
+_JETSON = _is_jetson()
 from dataclasses import dataclass
 from typing import Optional
 from PIL import Image, ImageDraw, ImageFont
@@ -209,7 +214,7 @@ def _select_mode() -> str:
             selected[0] = 'video'
         elif k == 27:
             selected[0] = 'camera'
-        if cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
             selected[0] = 'camera'
 
     cv2.destroyWindow(WIN)
@@ -289,7 +294,7 @@ def _render_filepicker(files: list[str], cursor: int, typed: str,
 
     # 직접 입력 칸
     input_y = LIST_Y + ROW_H * MAX_ROWS + 20
-    draw.text((16, input_y), '직접 입력:', font=_f(14), fill=C_SUB)
+    draw.text((16, input_y), '직접 입력 (경로 또는 YouTube URL):', font=_f(14), fill=C_SUB)
     border_col = (220, 60, 60) if error else BORDER_HI
     _rrect(draw, 100, input_y - 4, W - 16, input_y + 26, 6,
            BG_CARD, border_col, width=1)
@@ -302,7 +307,7 @@ def _render_filepicker(files: list[str], cursor: int, typed: str,
     hint_y = H - 44
     draw.rectangle([(0, hint_y - 6), (W, H)], fill=(22, 18, 38))
     _center(draw, W//2, hint_y,
-            '↑↓: 선택   Enter: 확인   ESC: 뒤로   Ctrl+V: 경로 붙여넣기',
+            '↑↓: 선택   Enter: 확인   ESC: 뒤로   Ctrl+V: 경로/URL 붙여넣기',
             _f(12), C_HINT)
 
     return _cv(img)
@@ -332,7 +337,10 @@ def _select_video() -> Optional[str]:
         elif k == 13 or k == 10:            # Enter → 확인
             if typed[0].strip():
                 p = typed[0].strip().strip("'\"")
-                if os.path.isfile(p):
+                if 'youtube.com' in p or 'youtu.be' in p:
+                    cv2.destroyWindow(WIN)
+                    return p
+                elif os.path.isfile(p):
                     cv2.destroyWindow(WIN)
                     return p
                 else:
@@ -359,7 +367,7 @@ def _select_video() -> Optional[str]:
         elif 32 <= k <= 126:                # 출력 가능 ASCII
             typed[0] += chr(k)
 
-        if cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
             cv2.destroyWindow(WIN)
             return None
 
@@ -504,7 +512,7 @@ def _select_profile() -> EnvProfile:
             idx = k - ord('1')
             if idx < len(keys):
                 selected[0] = keys[idx]
-        if cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
             selected[0] = 'office'
 
     cv2.destroyWindow(WIN)
