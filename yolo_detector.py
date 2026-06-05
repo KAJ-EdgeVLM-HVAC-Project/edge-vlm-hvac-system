@@ -12,7 +12,13 @@ VLM 인원 감지 대비 이점:
 YOLO 로드 실패 시 자동으로 VLM 인원 감지로 폴백.
 """
 
+import os
 import numpy as np
+
+
+def _is_jetson() -> bool:
+    import platform
+    return platform.machine() == "aarch64" and os.path.exists("/etc/nv_tegra_release")
 
 
 class YOLODetector:
@@ -36,11 +42,13 @@ class YOLODetector:
         self.conf       = conf
         self._last_count = 0
 
+        self._device = "cpu" if _is_jetson() else None  # Jetson: cuDNN 엔진 오류 방지
         try:
             from ultralytics import YOLO
             self._model     = YOLO("yolov8n.pt")
             self._available = True
-            print(f"[YOLO] YOLOv8n 로드 완료 (imgsz={imgsz}, conf={conf})")
+            dev_label = f"device={self._device}" if self._device else "auto"
+            print(f"[YOLO] YOLOv8n 로드 완료 (imgsz={imgsz}, conf={conf}, {dev_label})")
         except ImportError:
             print("[YOLO] ultralytics 미설치 → pip install ultralytics")
         except Exception as e:
@@ -65,13 +73,10 @@ class YOLODetector:
             return -1
 
         try:
-            results = self._model(
-                frame,
-                classes=[0],           # class 0 = person
-                imgsz=self.imgsz,
-                conf=self.conf,
-                verbose=False,
-            )
+            kwargs = dict(classes=[0], imgsz=self.imgsz, conf=self.conf, verbose=False)
+            if self._device:
+                kwargs["device"] = self._device
+            results = self._model(frame, **kwargs)
             self._last_count = len(results[0].boxes)
         except Exception as e:
             print(f"[YOLO] 추론 오류: {e}")
