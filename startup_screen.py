@@ -76,11 +76,21 @@ def _clipboard_paste() -> str:
             return subprocess.check_output(['pbpaste'], text=True).strip()
         else:
             import subprocess
-            for cmd in [['xclip', '-o', '-selection', 'clipboard'],
-                        ['xsel', '--clipboard', '--output']]:
+            env = os.environ.copy()
+            if 'DISPLAY' not in env:
+                env['DISPLAY'] = ':0'
+            for cmd in [
+                ['xclip', '-o', '-selection', 'clipboard'],
+                ['xclip', '-o', '-selection', 'primary'],
+                ['xsel', '--clipboard', '--output'],
+                ['xsel', '--primary', '--output'],
+            ]:
                 try:
-                    return subprocess.check_output(cmd, text=True,
-                                                   stderr=subprocess.DEVNULL).strip()
+                    result = subprocess.check_output(cmd, text=True,
+                                                     stderr=subprocess.DEVNULL,
+                                                     env=env).strip()
+                    if result:
+                        return result
                 except Exception:
                     pass
     except Exception:
@@ -296,10 +306,15 @@ def _render_filepicker(files: list[str], cursor: int, typed: str,
     input_y = LIST_Y + ROW_H * MAX_ROWS + 20
     draw.text((16, input_y), '직접 입력 (경로 또는 YouTube URL):', font=_f(14), fill=C_SUB)
     border_col = (220, 60, 60) if error else BORDER_HI
-    _rrect(draw, 100, input_y - 4, W - 16, input_y + 26, 6,
+    BTN_W = 90
+    _rrect(draw, 100, input_y - 4, W - BTN_W - 24, input_y + 26, 6,
            BG_CARD, border_col, width=1)
-    display_text = typed[-68:] if len(typed) > 68 else typed
+    display_text = typed[-58:] if len(typed) > 58 else typed
     draw.text((108, input_y), display_text + '|', font=_f(14), fill=C_WHITE)
+    # 붙여넣기 버튼
+    _rrect(draw, W - BTN_W - 20, input_y - 4, W - 16, input_y + 26, 6,
+           (60, 80, 160), (100, 120, 220), width=1)
+    _center(draw, W - BTN_W // 2 - 18, input_y + 2, '📋 붙여넣기', _f(13), C_WHITE)
     if error:
         draw.text((16, input_y + 28), error, font=_f(12), fill=(220, 80, 80))
 
@@ -307,7 +322,7 @@ def _render_filepicker(files: list[str], cursor: int, typed: str,
     hint_y = H - 44
     draw.rectangle([(0, hint_y - 6), (W, H)], fill=(22, 18, 38))
     _center(draw, W//2, hint_y,
-            '↑↓: 선택   Enter: 확인   ESC: 뒤로   Ctrl+V: 경로/URL 붙여넣기',
+            '↑↓: 선택   Enter: 확인   ESC: 뒤로   Ctrl+V 또는 [붙여넣기] 버튼 클릭',
             _f(12), C_HINT)
 
     return _cv(img)
@@ -321,12 +336,42 @@ def _select_video() -> Optional[str]:
     error  = ['']
 
     WIN = 'Smart HVAC - 영상 파일 선택'
+    paste_clicked = [False]
+
+    LIST_Y_CB = 84
+    ROW_H_CB  = 38
+    MAX_ROWS_CB = 9
+    BTN_W_CB  = 90
+    input_y_cb = LIST_Y_CB + ROW_H_CB * MAX_ROWS_CB + 20
+
+    def on_mouse(event, x, y, flags, _):
+        if event != cv2.EVENT_LBUTTONDOWN:
+            return
+        # 붙여넣기 버튼 영역
+        if (W - BTN_W_CB - 20 <= x <= W - 16) and (input_y_cb - 4 <= y <= input_y_cb + 26):
+            paste_clicked[0] = True
+            return
+        # 파일 목록 클릭
+        if LIST_Y_CB <= y <= LIST_Y_CB + ROW_H_CB * MAX_ROWS_CB:
+            idx = (y - LIST_Y_CB) // ROW_H_CB
+            start = max(0, cursor[0] - MAX_ROWS_CB + 1)
+            real_i = start + idx
+            if 0 <= real_i < len(files):
+                cursor[0] = real_i
+
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(WIN, W, H)
     for _ in range(5):
         cv2.waitKey(1)
+    cv2.setMouseCallback(WIN, on_mouse)
 
     while True:
+        if paste_clicked[0]:
+            paste_clicked[0] = False
+            pasted = _clipboard_paste()
+            if pasted:
+                typed[0] = pasted
+                error[0] = ''
         cv2.imshow(WIN, _render_filepicker(files, cursor[0], typed[0], error[0]))
         k = cv2.waitKey(50) & 0xFF
 
@@ -362,7 +407,7 @@ def _select_video() -> Optional[str]:
         elif k == 22:                       # Ctrl+V
             pasted = _clipboard_paste()
             if pasted:
-                typed[0] += pasted
+                typed[0] = pasted  # 경로 전체 붙여넣기
 
         elif 32 <= k <= 126:                # 출력 가능 ASCII
             typed[0] += chr(k)
