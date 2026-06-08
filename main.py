@@ -33,6 +33,31 @@ from startup_screen import show_and_select, StartupResult
 import dashboard as dash
 import user_display as udisplay
 
+
+def _is_youtube_url(path: str) -> bool:
+    return 'youtube.com' in path or 'youtu.be' in path
+
+
+def _download_youtube_temp(url: str) -> str | None:
+    """YouTube 영상을 임시 파일로 다운로드. 경로 반환, 실패 시 None."""
+    import yt_dlp, tempfile
+    tmpdir = tempfile.mkdtemp(prefix="hvac_yt_")
+    ydl_opts = {
+        'format': 'best[ext=mp4]/best[height<=720]/best',
+        'outtmpl': os.path.join(tmpdir, 'video.%(ext)s'),
+        'quiet': False,
+        'no_warnings': True,
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(url, download=True)
+            ext  = info.get('ext', 'mp4')
+        path = os.path.join(tmpdir, f'video.{ext}')
+        return path if os.path.exists(path) else None
+    except Exception as e:
+        print(f"[YouTube] 다운로드 실패: {e}")
+        return None
+
 load_dotenv()
 
 
@@ -159,15 +184,22 @@ def save_log(data: dict):
 # ── VLM 백그라운드 스레드 ──────────────────────────────────────────────────────
 
 def vlm_worker(vlm, frame_lock, shared_frame_ref,
-               result_queue, stop_event, interval):
-    """VLM을 백그라운드에서 주기적으로 실행 — 메인 루프를 블로킹하지 않음."""
+               result_queue, stop_event, interval, trigger_event=None):
+    """VLM을 백그라운드에서 주기적으로 실행 — 메인 루프를 블로킹하지 않음.
+    trigger_event가 set되면 타이머 기다리지 않고 즉시 실행 (s키 수동 트리거용).
+    """
     while not stop_event.is_set():
         elapsed = 0.0
         while elapsed < interval and not stop_event.is_set():
+            # trigger_event가 set되면 대기 중단하고 즉시 분석
+            if trigger_event is not None and trigger_event.is_set():
+                break
             time.sleep(0.5)
             elapsed += 0.5
         if stop_event.is_set():
             break
+        if trigger_event is not None:
+            trigger_event.clear()
         with frame_lock:
             if shared_frame_ref[0] is None:
                 continue
@@ -350,10 +382,32 @@ def main(analysis_interval: int = 30):
 
     # 영상 모드로 선택됐으면 video_mode로 넘김
     if startup.mode == 'video' and startup.video_path:
-        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-        base = os.path.splitext(os.path.basename(startup.video_path))[0]
-        out_dir = os.path.join("results", f"{base}_{ts}")
-        video_mode(startup.video_path, analysis_interval, out_dir)
+        ts   = datetime.now().strftime("%Y%m%d_%H%M%S")
+        tmp_to_delete = None
+
+        if _is_youtube_url(startup.video_path):
+            print(f"[YouTube] 임시 다운로드 중... (분석 후 자동 삭제)")
+            print(f"  URL: {startup.video_path}")
+            video_path = _download_youtube_temp(startup.video_path)
+            if not video_path:
+                print("[YouTube] 다운로드 실패. 종료합니다.")
+                return
+            tmp_to_delete = video_path
+            out_dir = os.path.join("results", f"youtube_{ts}")
+        else:
+            video_path = startup.video_path
+            base    = os.path.splitext(os.path.basename(video_path))[0]
+            out_dir = os.path.join("results", f"{base}_{ts}")
+
+        try:
+            video_mode(video_path, analysis_interval, out_dir)
+        finally:
+            if tmp_to_delete and os.path.exists(tmp_to_delete):
+                os.unlink(tmp_to_delete)
+                tmpdir = os.path.dirname(tmp_to_delete)
+                if os.path.isdir(tmpdir) and not os.listdir(tmpdir):
+                    os.rmdir(tmpdir)
+                print("[YouTube] 임시 파일 삭제 완료")
         return
 
     env_profile = startup.profile
@@ -388,7 +442,7 @@ def main(analysis_interval: int = 30):
         departure_enabled  = env_profile.departure_enabled,
     )
     motion_det  = MotionDetector(history_len=10, blur_ksize=21)
-    yolo        = YOLODetector(imgsz=320, conf=0.35)
+    yolo        = YOLODetector(imgsz=640 if _is_jetson() else 320, conf=0.15)
     pid         = PIDController(kp=0.8, ki=0.05, kd=0.3)
     sensor      = SensorInterface(simulator=hvac)
 
@@ -459,11 +513,12 @@ def main(analysis_interval: int = 30):
     shared_frame_ref = [None]
     result_queue     = queue.Queue(maxsize=1)
     stop_event       = threading.Event()
+    vlm_trigger      = threading.Event()   # s키 수동 트리거용
 
     vlm_thread = threading.Thread(
         target=vlm_worker,
         args=(vlm, frame_lock, shared_frame_ref,
-              result_queue, stop_event, analysis_interval),
+              result_queue, stop_event, analysis_interval, vlm_trigger),
         daemon=True, name="VLM-Background",
     )
     vlm_thread.start()
@@ -759,21 +814,9 @@ def main(analysis_interval: int = 30):
             print(f"[선호] 시원하게  오프셋={pref_state['value']:+.1f}")
 
         elif ch == "s":
-            # 즉시 VLM 분석 (수동 트리거)
-            with frame_lock:
-                frame_copy = shared_frame_ref[0].copy()
-            vlm_data = vlm.analyze_frame(frame_copy)
-            if vlm_data:
-                last_vlm_data = vlm_data
-                log_row = process_vlm_result(
-                    vlm_data, last_people_count, last_count_source,
-                    motion_det, hvac, sm, engine, pid,
-                    sensor, display_state,
-                    out_temp, out_humid, out_weather, out_wind,
-                    pm10, pm25, khai,
-                    pmv_preference=pref_state['value'],
-                )
-                save_log(log_row)
+            # VLM 워커 스레드에 즉시 실행 신호 — 메인 스레드에서 직접 호출 시 MPS segfault 발생
+            vlm_trigger.set()
+            print("[VLM] 수동 트리거 → 워커 스레드에서 즉시 분석")
 
         # ── 수동 제어 키 (env_override 상태와 무관하게 항상 동작) ─────────────
         elif ch == "m":
@@ -895,7 +938,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
     engine = ThermalEngine()
     pid_ai = PIDController(kp=0.8, ki=0.05, kd=0.3)
     pid_rb = PIDController(kp=0.8, ki=0.05, kd=0.3)
-    yolo   = YOLODetector(imgsz=320, conf=0.35)
+    yolo   = YOLODetector(imgsz=640 if _is_jetson() else 320, conf=0.15)
     hvac_ai = HVACSimulator(room_size=ROOM_SIZE_M2)
     hvac_rb = HVACSimulator(room_size=ROOM_SIZE_M2)  # 룰베이스 전용 시뮬레이터
     energy_ai_wh = 0.0
@@ -914,10 +957,12 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
     fps          = cap.get(cv2.CAP_PROP_FPS) or 30.0
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     duration_sec = total_frames / fps
-    vlm_every_n  = max(1, int(fps * analysis_interval))
+
+    effective_interval = analysis_interval
+    vlm_every_n = max(1, int(fps * effective_interval))
 
     print(f"  FPS: {fps:.1f}  |  총 {total_frames} 프레임  |  {duration_sec:.1f}초")
-    print(f"  VLM 분석 주기: {vlm_every_n} 프레임마다 (≈{analysis_interval}초)\n")
+    print(f"  VLM 분석 주기: {vlm_every_n} 프레임마다 (≈{effective_interval}초)\n")
 
     # ── CSV 헤더 ─────────────────────────────────────────────────────────────
     columns = [
@@ -956,7 +1001,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
     # 분석할 프레임 인덱스 목록 생성 (VLM 주기마다 1개)
     analysis_frames = list(range(0, total_frames, vlm_every_n))
     total_steps = len(analysis_frames)
-    people_count = 1
+    people_count = 0
 
     print(f"분석 포인트: {total_steps}개  (각 {analysis_interval}초 간격)\n")
     print("분석 시작... (q키로 중단 가능)\n")
@@ -983,7 +1028,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
             last_vlm_data = vlm.analyze_frame(frame) or vlm._default_result()
 
             # ── 경과 시간만큼 물리 시뮬레이션 누적 ─────────────────────────
-            dt_sec = analysis_interval if step_idx > 0 else 0.0
+            dt_sec = effective_interval if step_idx > 0 else 0.0
             dt_h   = dt_sec / 3600.0
             sim_steps = max(1, int(dt_sec * 10))   # 0.1초 단위로 시뮬레이션
             for _ in range(sim_steps):
