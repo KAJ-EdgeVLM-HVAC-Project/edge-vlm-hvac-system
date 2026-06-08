@@ -580,34 +580,47 @@ def _select_initial_conditions() -> tuple:
     """트랙바로 초기 실내온도/습도/외기온도 설정. (indoor_temp, indoor_humid, outdoor_temp) 반환."""
     WIN = 'Smart HVAC - 초기 환경 조건'
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
-    cv2.resizeWindow(WIN, 600, 260)
+    cv2.resizeWindow(WIN, 640, 300)
 
-    # 트랙바: 값 = 실제값 × 10 (소수점 표현)
-    cv2.createTrackbar('실내온도 (°C)',  WIN, 260, 450, lambda v: None)  # 15~45°C
-    cv2.createTrackbar('실내습도 (%)',   WIN, 500, 1000, lambda v: None)  # 0~100%
-    cv2.createTrackbar('외기온도 (°C)',  WIN, 300, 450, lambda v: None)  # 15~45°C
+    # 트랙바 범위: 온도 -20~50°C (오프셋 +20), 습도 10~100%
+    TEMP_OFFSET = 20   # 트랙바 0 = -20°C
+    cv2.createTrackbar('실내온도 -20~50 C', WIN, 26 + TEMP_OFFSET, 70, lambda v: None)
+    cv2.createTrackbar('실내습도  10~100%', WIN, 50,               90, lambda v: None)
+    cv2.createTrackbar('외기온도 -20~50 C', WIN, 30 + TEMP_OFFSET, 70, lambda v: None)
 
-    print("\n[초기 환경] 트랙바로 조절 후 Enter 또는 아무 키나 누르세요.")
-    print("  실내온도: 26°C  실내습도: 50%  외기온도: 30°C  (기본값)")
+    print("\n[초기 환경] 트랙바로 조절 후 아무 키나 누르세요.")
 
     while True:
+        it = cv2.getTrackbarPos('실내온도 -20~50 C', WIN) - TEMP_OFFSET
+        ih = cv2.getTrackbarPos('실내습도  10~100%', WIN) + 10
+        ot = cv2.getTrackbarPos('외기온도 -20~50 C', WIN) - TEMP_OFFSET
+
+        canvas = np.zeros((300, 640, 3), dtype=np.uint8)
+        canvas[:] = (20, 20, 35)
+        cv2.putText(canvas, 'Initial Environment Conditions',
+                    (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (180, 160, 255), 2)
+        cv2.putText(canvas, f'Indoor Temp  : {it:+d} C',
+                    (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (80, 200, 255), 2)
+        cv2.putText(canvas, f'Indoor Humid : {ih} %',
+                    (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (80, 255, 160), 2)
+        cv2.putText(canvas, f'Outdoor Temp : {ot:+d} C',
+                    (20, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 180, 80), 2)
+        cv2.putText(canvas, 'Press any key to confirm',
+                    (20, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (120, 120, 120), 1)
+        cv2.imshow(WIN, canvas)
+
         k = cv2.waitKey(100) & 0xFF
-        if k != 255:  # 아무 키나 누르면 확정
+        if k != 255:
             break
         if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
             break
 
-    indoor_temp  = cv2.getTrackbarPos('실내온도 (°C)', WIN) / 10.0
-    indoor_humid = cv2.getTrackbarPos('실내습도 (%)',   WIN) / 10.0
-    outdoor_temp = cv2.getTrackbarPos('외기온도 (°C)', WIN) / 10.0
-
-    # 범위 보정: 실내온도 최소 15°C, 습도 최소 10%
-    indoor_temp  = max(15.0, indoor_temp)
-    indoor_humid = max(10.0, min(100.0, indoor_humid))
-    outdoor_temp = max(15.0, outdoor_temp)
+    indoor_temp  = float(cv2.getTrackbarPos('실내온도 -20~50 C', WIN) - TEMP_OFFSET)
+    indoor_humid = float(cv2.getTrackbarPos('실내습도  10~100%', WIN) + 10)
+    outdoor_temp = float(cv2.getTrackbarPos('외기온도 -20~50 C', WIN) - TEMP_OFFSET)
 
     cv2.destroyWindow(WIN)
-    print(f"[초기 환경] 실내 {indoor_temp:.1f}°C / {indoor_humid:.1f}%  외기 {outdoor_temp:.1f}°C")
+    print(f"[초기 환경] 실내 {indoor_temp:.0f}°C / {indoor_humid:.0f}%  외기 {outdoor_temp:.0f}°C")
     return indoor_temp, indoor_humid, outdoor_temp
 
 
