@@ -122,6 +122,9 @@ class StartupResult:
     mode: str                    # 'camera' | 'video'
     video_path: Optional[str]    # 영상 파일 경로 (video 모드만)
     profile: EnvProfile          # 환경 프로파일
+    indoor_temp: float = 26.0    # 초기 실내온도 (°C)
+    indoor_humid: float = 50.0   # 초기 실내습도 (%)
+    outdoor_temp: float = 30.0   # 외기온도 (°C)
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -573,9 +576,44 @@ def _select_profile() -> EnvProfile:
 WIN_NAME = 'Smart HVAC - 환경 설정'   # 하위 호환용
 
 
+def _select_initial_conditions() -> tuple:
+    """트랙바로 초기 실내온도/습도/외기온도 설정. (indoor_temp, indoor_humid, outdoor_temp) 반환."""
+    WIN = 'Smart HVAC - 초기 환경 조건'
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WIN, 600, 260)
+
+    # 트랙바: 값 = 실제값 × 10 (소수점 표현)
+    cv2.createTrackbar('실내온도 (°C)',  WIN, 260, 450, lambda v: None)  # 15~45°C
+    cv2.createTrackbar('실내습도 (%)',   WIN, 500, 1000, lambda v: None)  # 0~100%
+    cv2.createTrackbar('외기온도 (°C)',  WIN, 300, 450, lambda v: None)  # 15~45°C
+
+    print("\n[초기 환경] 트랙바로 조절 후 Enter 또는 아무 키나 누르세요.")
+    print("  실내온도: 26°C  실내습도: 50%  외기온도: 30°C  (기본값)")
+
+    while True:
+        k = cv2.waitKey(100) & 0xFF
+        if k != 255:  # 아무 키나 누르면 확정
+            break
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+            break
+
+    indoor_temp  = cv2.getTrackbarPos('실내온도 (°C)', WIN) / 10.0
+    indoor_humid = cv2.getTrackbarPos('실내습도 (%)',   WIN) / 10.0
+    outdoor_temp = cv2.getTrackbarPos('외기온도 (°C)', WIN) / 10.0
+
+    # 범위 보정: 실내온도 최소 15°C, 습도 최소 10%
+    indoor_temp  = max(15.0, indoor_temp)
+    indoor_humid = max(10.0, min(100.0, indoor_humid))
+    outdoor_temp = max(15.0, outdoor_temp)
+
+    cv2.destroyWindow(WIN)
+    print(f"[초기 환경] 실내 {indoor_temp:.1f}°C / {indoor_humid:.1f}%  외기 {outdoor_temp:.1f}°C")
+    return indoor_temp, indoor_humid, outdoor_temp
+
+
 def show_and_select() -> StartupResult:
     """
-    3단계 시작 화면을 순서대로 표시하고 StartupResult 반환.
+    시작 화면을 순서대로 표시하고 StartupResult 반환.
     ESC / 창 닫기 시 기본값(camera + office) 반환.
     """
     # 1단계: 모드
@@ -586,10 +624,16 @@ def show_and_select() -> StartupResult:
     if mode == 'video':
         video_path = _select_video()
         if video_path is None:
-            # 취소 → 카메라 모드로 전환
             mode = 'camera'
 
     # 3단계: 환경 프로파일
     profile = _select_profile()
 
-    return StartupResult(mode=mode, video_path=video_path, profile=profile)
+    # 4단계: 초기 환경 조건 (video 모드일 때만)
+    indoor_temp, indoor_humid, outdoor_temp = 26.0, 50.0, 30.0
+    if mode == 'video':
+        indoor_temp, indoor_humid, outdoor_temp = _select_initial_conditions()
+
+    return StartupResult(mode=mode, video_path=video_path, profile=profile,
+                         indoor_temp=indoor_temp, indoor_humid=indoor_humid,
+                         outdoor_temp=outdoor_temp)

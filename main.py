@@ -400,7 +400,10 @@ def main(analysis_interval: int = 30):
             out_dir = os.path.join("results", f"{base}_{ts}")
 
         try:
-            video_mode(video_path, analysis_interval, out_dir)
+            video_mode(video_path, analysis_interval, out_dir,
+                       init_indoor_temp=startup.indoor_temp,
+                       init_indoor_humid=startup.indoor_humid,
+                       outdoor_temp=startup.outdoor_temp)
         finally:
             if tmp_to_delete and os.path.exists(tmp_to_delete):
                 os.unlink(tmp_to_delete)
@@ -886,7 +889,10 @@ def main(analysis_interval: int = 30):
     cv2.destroyAllWindows()
 
 
-def video_mode(video_path: str, analysis_interval: int, output_dir: str):
+def video_mode(video_path: str, analysis_interval: int, output_dir: str,
+               init_indoor_temp: float = 26.0,
+               init_indoor_humid: float = 50.0,
+               outdoor_temp: float = 30.0):
     """
     영상 파일 분석 모드 — 논문/발표용 데이터 생성.
 
@@ -989,21 +995,27 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
 
     # ── 상태 변수 ─────────────────────────────────────────────────────────────
     last_vlm_data   = None
-    out_temp        = 20.0   # 외기 온도 (날씨 API 없이 고정, 추후 연동 가능)
-    out_humid       = 50.0
-    last_tick_time  = None   # 에너지 계산용
-    frame_idx       = 0
+    out_temp        = outdoor_temp
+    out_humid       = 60.0
+    people_count    = 0
     logged_rows     = 0
 
+    # 초기 실내 조건 설정
     hvac_ai.set_room(ROOM_SIZE_M2, False)
     hvac_rb.set_room(ROOM_SIZE_M2, False)
+    hvac_ai.indoor_temp  = init_indoor_temp
+    hvac_ai.indoor_humid = init_indoor_humid
+    hvac_rb.indoor_temp  = init_indoor_temp
+    hvac_rb.indoor_humid = init_indoor_humid
 
-    # 분석할 프레임 인덱스 목록 생성 (VLM 주기마다 1개)
-    analysis_frames = list(range(0, total_frames, vlm_every_n))
-    total_steps = len(analysis_frames)
-    people_count = 0
+    yolo_every_n = max(1, int(fps * 3))   # YOLO: 3초마다
+    vlm_every_n  = max(1, int(fps * effective_interval))  # VLM: interval마다
 
-    print(f"분석 포인트: {total_steps}개  (각 {analysis_interval}초 간격)\n")
+    total_steps  = total_frames // vlm_every_n
+    frame_count  = 0
+
+    print(f"  초기 실내: {init_indoor_temp:.1f}°C / {init_indoor_humid:.1f}%  외기: {out_temp:.1f}°C")
+    print(f"  YOLO: 3초마다  VLM: {effective_interval}초마다  총 예상 분석: {total_steps}회\n")
     print("분석 시작... (q키로 중단 가능)\n")
 
     if _is_jetson():
@@ -1013,28 +1025,40 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
     cv2.moveWindow("HVAC Video Analysis", 0, 0)
     cv2.waitKey(1)
 
+    vlm_step = 0
     try:
-        for step_idx, frame_idx in enumerate(analysis_frames):
-            # ── 해당 프레임으로 점프 ─────────────────────────────────────────
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_idx)
+        while True:
             ret, frame = cap.read()
             if not ret:
                 break
 
-            video_time = frame_idx / fps
-            pct        = (step_idx + 1) / total_steps * 100
+            frame_count += 1
+            video_time   = frame_count / fps
+            pct          = min(frame_count / total_frames * 100, 100.0)
 
-            print(f"  [{step_idx+1}/{total_steps}] {video_time:.0f}s  "
-                  f"({pct:.0f}%)  VLM 분석 중...", flush=True)
+            # ── YOLO: 3초마다 ────────────────────────────────────────────────
+            if frame_count % yolo_every_n == 0 and yolo.available:
+                people_count = max(0, yolo.count_people(frame))
 
-            # ── YOLO + VLM 분석 ─────────────────────────────────────────────
-            people_count  = max(0, yolo.count_people(frame) if yolo.available else 1)
+            # ── VLM + 제어 + CSV: analysis_interval초마다 ───────────────────
+            if frame_count % vlm_every_n != 0:
+                # VLM 주기 아닌 프레임은 화면만 업데이트
+                cv2.imshow("HVAC Video Analysis", frame)
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    break
+                continue
+
+            vlm_step += 1
+            dt_sec = effective_interval
+            dt_h   = dt_sec / 3600.0
+
+            print(f"  [{vlm_step}] {video_time:.0f}s ({pct:.0f}%)  "
+                  f"인원:{people_count}  VLM 분석 중...", flush=True)
+
             last_vlm_data = vlm.analyze_frame(frame) or vlm._default_result()
 
-            # ── 경과 시간만큼 물리 시뮬레이션 누적 ─────────────────────────
-            dt_sec = effective_interval if step_idx > 0 else 0.0
-            dt_h   = dt_sec / 3600.0
-            sim_steps = max(1, int(dt_sec * 10))   # 0.1초 단위로 시뮬레이션
+            # ── 물리 시뮬레이션 누적 ─────────────────────────────────────────
+            sim_steps = max(1, int(dt_sec * 10))
             for _ in range(sim_steps):
                 hvac_ai.simulate_step(out_temp, out_humid, people_count)
                 hvac_rb.simulate_step(out_temp, out_humid, people_count)
@@ -1085,7 +1109,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
                           (bar_w, disp.shape[0]), (80,160,255), -1)
 
             lines = [
-                f"[{step_idx+1}/{total_steps}]  {vt//60:02d}:{vt%60:02d} / "
+                f"[{vlm_step}]  {vt//60:02d}:{vt%60:02d} / "
                 f"{int(duration_sec)//60:02d}:{int(duration_sec)%60:02d}  ({pct:.0f}%)",
                 f"People:{people_count}  AI PMV:{ai_pmv:+.2f}  RB PMV:{rb_pmv:+.2f}",
                 f"AI:{energy_ai_wh:.2f}Wh  RB:{energy_rb_wh:.2f}Wh  "
@@ -1108,7 +1132,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
             if True:
                 row = {
                     "video_time_sec":  round(video_time, 2),
-                    "frame_number":    frame_idx,
+                    "frame_number":    frame_count,
                     "vlm_activity":    last_vlm_data.get("activity", "-"),
                     "vlm_sleeves":     last_vlm_data.get("sleeves", "-"),
                     "vlm_outerwear":   last_vlm_data.get("outerwear", "-"),
@@ -1149,7 +1173,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
         cap.release()
         cv2.destroyWindow("HVAC Video Analysis")
 
-    print(f"\n분석 완료: {logged_rows} 포인트 분석")
+    print(f"\n분석 완료: {vlm_step} 포인트 분석  ({logged_rows} CSV 행)")
     print(f"CSV 저장: {csv_path}\n")
 
     # ── 리포트 생성 ───────────────────────────────────────────────────────────
