@@ -289,9 +289,26 @@ class VLMProcessor:
             result = subprocess.run(
                 cmd, capture_output=True, text=True, timeout=120, env=env
             )
-            raw = result.stdout.strip()
+
+            # stdout에서 ggml/llama 로그 라인 제거 후 실제 모델 출력만 추출
+            def _clean(text: str) -> str:
+                lines = []
+                for line in text.splitlines():
+                    l = line.strip()
+                    if not l:
+                        continue
+                    if any(l.startswith(p) for p in (
+                        'E ggml', 'W ggml', 'I ggml', 'ggml_',
+                        'warning:', 'llama_', 'clip_', 'encode_',
+                        'main:', 'Log ',
+                    )):
+                        continue
+                    lines.append(l)
+                return ' '.join(lines).strip()
+
+            raw = _clean(result.stdout)
             if not raw:
-                raw = result.stderr.strip()
+                raw = _clean(result.stderr)
 
             # 프롬프트 prefix와 함께 완전한 JSON 복원
             raw = '{"sleeves":"' + raw
