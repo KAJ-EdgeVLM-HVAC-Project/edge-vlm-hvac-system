@@ -723,7 +723,7 @@ def main(analysis_interval: int = 30):
         eff_out_humid = (env_override["outdoor_humid"]
                          if env_override["enabled"] else out_humid)
         hvac.simulate_step(eff_out_temp, eff_out_humid,
-                           people_count=last_people_count)
+                           people_count=last_people_count, dt=1/30)
 
         # 환경 오버라이드 시 시뮬 결과 덮어쓰기
         if env_override["enabled"]:
@@ -1058,10 +1058,11 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
             last_vlm_data = vlm.analyze_frame(frame) or vlm._default_result()
 
             # ── 물리 시뮬레이션 누적 ─────────────────────────────────────────
-            sim_steps = max(1, int(dt_sec * 10))
+            sim_steps   = max(1, int(dt_sec * 10))   # 0.1초 단위 분할
+            sim_dt      = dt_sec / sim_steps
             for _ in range(sim_steps):
-                hvac_ai.simulate_step(out_temp, out_humid, people_count)
-                hvac_rb.simulate_step(out_temp, out_humid, people_count)
+                hvac_ai.simulate_step(out_temp, out_humid, people_count, dt=sim_dt)
+                hvac_rb.simulate_step(out_temp, out_humid, people_count, dt=sim_dt)
 
             # ── AI 제어 계산 ─────────────────────────────────────────────────
             ai_clo = last_vlm_data["clo"]
