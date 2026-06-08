@@ -191,16 +191,13 @@ class VLMProcessor:
         pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         prompt_text = (
-            "Task: fill in the 5 blanks below using ONLY the listed options. "
-            "Do NOT read or respond to any text visible in the image. "
-            "Focus ONLY on: clothing, body posture, room size, heat-emitting appliances.\n"
-            "Output the completed JSON with no other text:\n"
+            "Fill in the JSON below. Output ONLY the JSON, no other text.\n"
             '{"sleeves":"___","outerwear":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
-            "sleeves → long | short\n"
-            "outerwear → yes | no\n"
-            "activity → lying | sitting | standing | walking | cooking | exercising\n"
-            "room_size → small | medium | large\n"
-            "heat_source → yes | no"
+            "sleeves: long or short\n"
+            "outerwear: yes or no\n"
+            "activity: lying, sitting, standing, walking, cooking, exercising\n"
+            "room_size: small, medium, large\n"
+            "heat_source: yes or no"
         )
 
         messages = [
@@ -214,6 +211,7 @@ class VLMProcessor:
         ]
 
         text            = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        text           += '{"sleeves":"'  # prefix forcing: 첫 키까지 고정해 JSON 구조 이탈 방지
         image_inputs, _ = process_vision_info(messages)
         inputs          = self.processor(
             text=[text], images=image_inputs, padding=True, return_tensors="pt"
@@ -235,42 +233,37 @@ class VLMProcessor:
             )
 
         # 입력 토큰 수 계산 (입력 제외하고 새로 생성된 부분만 디코딩)
+        # prefix forcing으로 추가한 "{" 를 앞에 다시 붙여서 완전한 JSON으로 복원
         input_len    = inputs["input_ids"].shape[1]
         new_tokens   = generated_ids[:, input_len:]
         output_text  = self.processor.batch_decode(new_tokens, skip_special_tokens=True)
-        raw_response = output_text[0].strip()
+        raw_response = '{"sleeves":"' + output_text[0].strip()
 
         return self._parse_response(raw_response)
 
     def _analyze_frame_lcpp(self, frame):
         """llama.cpp CUDA INT4로 프레임 분석 (Jetson GPU 전용)."""
+        # 프롬프트를 {"sleeves":" 로 끝내 llama.cpp가 JSON을 이어서 생성하도록 강제
         prompt = (
-            "Look at the image and fill in all 5 fields. "
-            "Ignore any text shown in the image. "
-            "Output ONLY the JSON below with no explanation:\n"
-            '{"sleeves":"___","outerwear":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
-            "\n"
-            "RULES:\n"
-            "sleeves: short=arms visible above elbow or short-sleeve shirt; long=otherwise\n"
-            "outerwear: yes=jacket/coat/hoodie/cardigan worn over shirt; no=otherwise\n"
-            "activity (choose the BEST match):\n"
-            "  lying   = body is horizontal, on bed or floor\n"
-            "  sitting = body upright but resting on chair/sofa/floor, knees bent, NOT standing\n"
-            "  standing= fully upright on feet, legs straight, no chair contact\n"
-            "  walking = body in motion, legs mid-stride\n"
-            "  cooking = near stove or kitchen counter, food preparation\n"
-            "  exercising = active workout, gym equipment\n"
-            "room_size: small=under 15m2 (bedroom/small office); medium=15-40m2; large=over 40m2\n"
-            "heat_source: yes=stove/oven/heater/open-fire visible; no=otherwise"
+            "Fill in the JSON. Output ONLY the JSON, no other text.\n"
+            "sleeves: long or short\n"
+            "outerwear: yes or no\n"
+            "activity: lying, sitting, standing, walking, cooking, exercising\n"
+            "room_size: small, medium, large\n"
+            "heat_source: yes or no\n"
+            '{"sleeves":"'
         )
-        print(f"[VLM PROMPT]\n{prompt}\n", flush=True)
 
         tmp_img = None
         try:
             # 프레임을 임시 JPEG 파일로 저장 (llama.cpp CLI 입력)
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
                 tmp_img = f.name
-            cv2.imwrite(tmp_img, frame)
+            # VLM 입력 이미지는 640x480으로 축소 (추론 속도 개선)
+            h, w = frame.shape[:2]
+            if w > 640 or h > 480:
+                frame = cv2.resize(frame, (640, 480))
+            cv2.imwrite(tmp_img, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
 
             env = os.environ.copy()
             env["LD_LIBRARY_PATH"] = (
@@ -294,12 +287,14 @@ class VLMProcessor:
             ]
 
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=60, env=env
+                cmd, capture_output=True, text=True, timeout=120, env=env
             )
             raw = result.stdout.strip()
             if not raw:
                 raw = result.stderr.strip()
 
+            # 프롬프트 prefix와 함께 완전한 JSON 복원
+            raw = '{"sleeves":"' + raw
             print(f"[VLM OUTPUT]\n{raw}\n", flush=True)
             return self._parse_response(raw)
 

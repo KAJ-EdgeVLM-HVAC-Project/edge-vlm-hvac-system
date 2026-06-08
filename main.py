@@ -1006,8 +1006,12 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str):
     print(f"분석 포인트: {total_steps}개  (각 {analysis_interval}초 간격)\n")
     print("분석 시작... (q키로 중단 가능)\n")
 
+    if _is_jetson():
+        cv2.startWindowThread()
     cv2.namedWindow("HVAC Video Analysis", cv2.WINDOW_NORMAL)
+    cv2.resizeWindow("HVAC Video Analysis", 960, 540)
     cv2.moveWindow("HVAC Video Analysis", 0, 0)
+    cv2.waitKey(1)
 
     try:
         for step_idx, frame_idx in enumerate(analysis_frames):
