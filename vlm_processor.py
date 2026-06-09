@@ -290,8 +290,9 @@ class VLMProcessor:
                 cmd, capture_output=True, text=True, timeout=120, env=env
             )
 
-            # stdout에서 ggml/llama 로그 라인 제거 후 실제 모델 출력만 추출
+            # stdout에서 ggml/llama 로그 및 echo된 프롬프트 라인 제거
             def _clean(text: str) -> str:
+                import re as _re
                 lines = []
                 for line in text.splitlines():
                     l = line.strip()
@@ -301,6 +302,18 @@ class VLMProcessor:
                         'E ggml', 'W ggml', 'I ggml', 'ggml_',
                         'warning:', 'llama_', 'clip_', 'encode_',
                         'main:', 'Log ',
+                        # echo된 프롬프트 라인 제거
+                        'Fill in', 'sleeves:', 'outerwear:', 'activity:',
+                        'room_size:', 'heat_source:', 'Output ONLY',
+                    )):
+                        continue
+                    # lcpp 타이밍/통계 라인 (숫자로 시작) 필터
+                    if _re.match(r'^\d+[\.\d]*\s', l):
+                        continue
+                    # CUDA 에러 키워드 포함 라인 필터
+                    if any(kw in l for kw in (
+                        'ggml_cuda_init', 'failed to initialize CUDA',
+                        'CUDA-capable device', 'no CUDA',
                     )):
                         continue
                     lines.append(l)
@@ -329,6 +342,7 @@ class VLMProcessor:
         """모델 거절/파싱 실패 시 반환할 기본값"""
         return {
             "raw_response": raw,
+            "sleeves":      "long",
             "clo":          1.0,
             "met":          self.MET_DEFAULT,
             "room_size":    "medium",
@@ -343,13 +357,35 @@ class VLMProcessor:
         JSON 파싱 실패 시 자연어 키워드 매핑으로 fallback.
         """
         try:
-            json_match = re.search(r'\{.*?\}', raw_response, re.DOTALL)
-            if json_match:
-                data = json.loads(json_match.group())
-            else:
-                # JSON 없으면 자연어에서 키워드로 추출
-                data = self._extract_from_text(raw_response)
-                print(f"✅ [VLM] 자연어 파싱. 응답: {raw_response[:60]}")
+            # 텍스트 내 모든 {...} 패턴 시도 — lcpp가 프롬프트를 echo할 때
+            # 앞쪽 {가 잘못 매칭되는 문제 방지를 위해 마지막 유효 JSON 우선 사용
+            data = None
+            for m in re.finditer(r'\{[^{}]+\}', raw_response):
+                try:
+                    candidate = json.loads(m.group())
+                    if any(k in candidate for k in ('sleeves', 'activity', 'outerwear')):
+                        data = candidate  # 마지막으로 유효한 것을 덮어씀
+                except json.JSONDecodeError:
+                    continue
+            if data is None:
+                # JSON 없으면 regex로 enum값 직접 추출 시도
+                data = {}
+                sm = re.search(r'"sleeves"\s*:\s*"(long|short)"', raw_response)
+                am = re.search(r'"activity"\s*:\s*"(sitting|standing|walking|lying|cooking|exercising)"', raw_response)
+                om = re.search(r'"outerwear"\s*:\s*"(yes|no)"', raw_response)
+                rm = re.search(r'"room_size"\s*:\s*"(small|medium|large)"', raw_response)
+                hm = re.search(r'"heat_source"\s*:\s*"(yes|no)"', raw_response)
+                if sm: data['sleeves']     = sm.group(1)
+                if am: data['activity']    = am.group(1)
+                if om: data['outerwear']   = om.group(1)
+                if rm: data['room_size']   = rm.group(1)
+                if hm: data['heat_source'] = hm.group(1)
+                if not data:
+                    # 최후 fallback: 자연어 키워드 매핑
+                    data = self._extract_from_text(raw_response)
+                    print(f"[VLM] 자연어 파싱. 응답: {raw_response[:80]}")
+                else:
+                    print(f"[VLM] regex 파싱 성공: {data}")
 
             clo = self.CLO_BASE.get(data.get('sleeves', 'long'), 1.0)
             if data.get('outerwear') == 'yes':
@@ -362,6 +398,7 @@ class VLMProcessor:
 
             return {
                 "raw_response": raw_response,
+                "sleeves":      data.get('sleeves', 'long'),
                 "clo":          round(clo, 2),
                 "met":          met,
                 "room_size":    room_size,

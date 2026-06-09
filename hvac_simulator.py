@@ -16,7 +16,7 @@ class HVACSimulator:
 
     TAU_BUILDING = 3600.0   # 건물 열시상수 (초), 클수록 단열 좋음
     COOL_RATE    = 0.025    # °C/s / fan_speed / size_factor (냉방)
-    HEAT_RATE    = 0.050    # °C/s / fan_speed / size_factor (난방)
+    HEAT_RATE    = 0.025    # °C/s / fan_speed / size_factor (난방, 현실적 속도)
     BODY_HEAT    = 0.0030   # °C/s / person / size_factor   (체열)
 
     def __init__(self, room_size: float = 20.0):

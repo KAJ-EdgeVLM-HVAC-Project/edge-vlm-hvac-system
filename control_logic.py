@@ -42,6 +42,10 @@ TR_HEAT_OFFSET: float = 4.0
 # 쾌적 기준 온도 (PMV 쾌적 구간 유지 목표)
 COMFORT_TEMP: float = 24.0
 
+# 재실 시 난방 최소 유지 온도 — 겨울 두꺼운 옷(clo=1.0)이면 PMV가 19°C에서도
+# 쾌적(-0.5~+0.5)으로 나와 AI가 조기 OFF됨. 실제 사무실 기준(22°C)을 하한으로 보장.
+HEAT_FLOOR_TEMP: float = 22.0
+
 # ── 목표 온도 테이블 ──────────────────────────────────────────────────────────dsaf
 # (PMV 임계값, 목표 온도) — 리스트는 높은 PMV 순으로 정렬
 # PMV가 임계값 이상이면 해당 목표온도로 적극 냉/난방
@@ -99,7 +103,8 @@ def _min_fan_from_pmv(pmv_val: float) -> int:
 
 def decide_control(pmv_val: float, people_count: int, pid: PIDController,
                    hvac_is_on: bool = False, hvac_mode: str = "cool",
-                   dt: float = None, current_fan: int = 1):
+                   dt: float = None, current_fan: int = 1,
+                   indoor_temp: float = None):
     """
     PMV 기반 제어 결정 (동적 목표온도 + PMV 비례 팬 속도 + 히스테리시스).
 
@@ -123,6 +128,12 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
     if people_count == 0:
         pid.reset()
         return False, COMFORT_TEMP, 1, None
+
+    # 난방 최소온도 보장 — 겨울 두꺼운 옷 착용 시 PMV가 19~20°C에서도 쾌적으로
+    # 나와 AI가 조기 OFF됨. 실내온도 < HEAT_FLOOR_TEMP이면 24°C까지 계속 난방.
+    if indoor_temp is not None and indoor_temp < HEAT_FLOOR_TEMP:
+        fan_floor = max(_min_fan_from_pmv(pmv_val), 2)
+        return True, COMFORT_TEMP, fan_floor, "heat"
 
     # 팬 속도: PID 출력과 PMV 비례 하한 중 큰 값
     pid_output = pid.compute(pmv_val, dt=dt)
