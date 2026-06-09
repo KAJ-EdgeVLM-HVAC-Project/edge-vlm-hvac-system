@@ -209,3 +209,11 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Runtime outputs
+results/
+hvac_system_performance.csv
+*.csv
+
+# Claude Code settings
+.claude/settings.json

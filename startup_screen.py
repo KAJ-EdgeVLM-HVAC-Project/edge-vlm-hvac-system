@@ -1,33 +1,47 @@
+from __future__ import annotations
+
 """
-[환경 선택 화면]
-시스템 시작 시 사용 공간 유형을 선택합니다.
-마우스 호버 + 클릭으로 선택.
+[시작 화면 모듈]
+1단계 : 모드 선택 (실시간 카메라 / 영상 파일 분석)
+2단계 : 영상 파일 선택 (영상 모드 선택 시)
+3단계 : 환경 프로파일 선택
 """
 
 import cv2
 import numpy as np
 import platform
 import os
+import glob
+
+def _is_jetson() -> bool:
+    return platform.machine() == "aarch64" and os.path.exists("/etc/nv_tegra_release")
+
+_JETSON = _is_jetson()
+from dataclasses import dataclass
+from typing import Optional
 from PIL import Image, ImageDraw, ImageFont
 from env_profiles import PROFILES, EnvProfile
 
 W = 960
-H = 520
-
-CARD_REGIONS: dict = {}   # {key: (x1,y1,x2,y2)}
+H = 540
 
 # ── 색상 ──────────────────────────────────────────────────────────────────────
-BG         = (245, 247, 252)
-HEADER_BG  = (17,  24,  52)
-CARD_BG    = (255, 255, 255)
-BORDER     = (220, 223, 235)
-TXT        = (22,  22,  36)
-TXT_S      = (98, 102, 125)
-TXT_H      = (165, 168, 185)
+BG        = ( 18,  18,  28)
+BG_CARD   = ( 30,  30,  46)
+BG_HDR    = ( 26,  22,  52)
+BG_SEL    = ( 40,  36,  72)
+BORDER    = ( 55,  52,  90)
+BORDER_HI = (120, 100, 220)
+C_WHITE   = (255, 255, 255)
+C_TITLE   = (185, 165, 255)
+C_SUB     = (130, 125, 165)
+C_HINT    = ( 90,  85, 120)
+C_GREEN   = ( 80, 210, 110)
+C_ORANGE  = (255, 172,  55)
+C_BLUE    = ( 80, 160, 255)
 
-# ── 폰트 ──────────────────────────────────────────────────────────────────────
+# ── 폰트 캐시 ─────────────────────────────────────────────────────────────────
 _fc: dict = {}
-
 
 def _f(size: int, bold: bool = False):
     k = (size, bold)
@@ -38,8 +52,7 @@ def _f(size: int, bold: bool = False):
         root = os.environ.get('SystemRoot', r'C:\Windows')
         cands = [os.path.join(root, 'Fonts', 'malgunbd.ttf' if bold else 'malgun.ttf')]
     elif sys == 'Darwin':
-        cands = ['/System/Library/Fonts/AppleSDGothicNeo.ttc',
-                 '/System/Library/Fonts/Supplemental/AppleGothic.ttf']
+        cands = ['/System/Library/Fonts/AppleSDGothicNeo.ttc']
     else:
         cands = ['/usr/share/fonts/truetype/nanum/NanumGothicBold.ttf' if bold
                  else '/usr/share/fonts/truetype/nanum/NanumGothic.ttf',
@@ -52,17 +65,41 @@ def _f(size: int, bold: bool = False):
             return f
         except Exception:
             pass
-    f = ImageFont.load_default()
-    _fc[k] = f
-    return f
+    return ImageFont.load_default()
 
 
-def _rrect(draw, x0, y0, x1, y1, r, fill, outline=None, width=1):
+def _clipboard_paste() -> str:
+    """클립보드 내용 읽기 — 플랫폼별 처리"""
     try:
-        draw.rounded_rectangle([(x0, y0), (x1, y1)],
-                                radius=r, fill=fill, outline=outline, width=width)
-    except AttributeError:
-        draw.rectangle([(x0, y0), (x1, y1)], fill=fill, outline=outline, width=width)
+        if platform.system() == 'Darwin':
+            import subprocess
+            return subprocess.check_output(['pbpaste'], text=True).strip()
+        else:
+            import subprocess
+            env = os.environ.copy()
+            if 'DISPLAY' not in env:
+                env['DISPLAY'] = ':0'
+            for cmd in [
+                ['xclip', '-o', '-selection', 'clipboard'],
+                ['xclip', '-o', '-selection', 'primary'],
+                ['xsel', '--clipboard', '--output'],
+                ['xsel', '--primary', '--output'],
+            ]:
+                try:
+                    result = subprocess.check_output(cmd, text=True,
+                                                     stderr=subprocess.DEVNULL,
+                                                     env=env).strip()
+                    if result:
+                        return result
+                except Exception:
+                    pass
+    except Exception:
+        pass
+    return ''
+
+
+def _cv(img: Image.Image) -> np.ndarray:
+    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
 
 
 def _center(draw, cx, y, text, font, fill):
@@ -70,54 +107,356 @@ def _center(draw, cx, y, text, font, fill):
     draw.text((cx - (bb[2] - bb[0]) // 2, y), text, font=font, fill=fill)
 
 
-# ── 환경별 아이콘 ──────────────────────────────────────────────────────────────
+def _rrect(draw, x0, y0, x1, y1, r, fill, outline=None, width=1):
+    try:
+        draw.rounded_rectangle([(x0, y0), (x1, y1)], radius=r,
+                                fill=fill, outline=outline, width=width)
+    except AttributeError:
+        draw.rectangle([(x0, y0), (x1, y1)], fill=fill,
+                       outline=outline, width=width)
+
+
+# ── 반환 타입 ──────────────────────────────────────────────────────────────────
+@dataclass
+class StartupResult:
+    mode: str                    # 'camera' | 'video'
+    video_path: Optional[str]    # 영상 파일 경로 (video 모드만)
+    profile: EnvProfile          # 환경 프로파일
+    indoor_temp: float = 26.0    # 초기 실내온도 (°C)
+    indoor_humid: float = 50.0   # 초기 실내습도 (%)
+    outdoor_temp: float = 30.0   # 외기온도 (°C)
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 1단계: 모드 선택
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+_MODE_REGIONS: dict = {}
+
+def _render_mode(hover: int) -> np.ndarray:
+    img  = Image.new('RGB', (W, H), BG)
+    draw = ImageDraw.Draw(img)
+
+    # 헤더
+    draw.rectangle([(0, 0), (W, 90)], fill=BG_HDR)
+    _center(draw, W//2, 14, 'Smart HVAC  VLM System', _f(26, True), C_TITLE)
+    _center(draw, W//2, 52, 'VLM 기반 지능형 공조 제어 시스템', _f(14), C_SUB)
+
+    # 모드 카드 2개
+    cards = [
+        (0, '실시간 카메라',    '카메라 영상을 실시간 분석\n즉각적인 HVAC 제어', C_BLUE),
+        (1, '영상 파일 분석',   '저장된 영상으로 분석\n논문용 데이터 · 그래프 자동 생성', C_GREEN),
+    ]
+    _MODE_REGIONS.clear()
+    CW, CH = 390, 260
+    gap = (W - CW * 2) // 3
+    cy0 = 130
+
+    for idx, title, desc, col in cards:
+        x0 = gap + idx * (CW + gap)
+        x1 = x0 + CW
+        y1 = cy0 + CH
+
+        is_hi = (hover == idx)
+        bg    = BG_SEL if is_hi else BG_CARD
+        bord  = BORDER_HI if is_hi else BORDER
+        _rrect(draw, x0, cy0, x1, y1, 16, bg, bord, width=2 if is_hi else 1)
+
+        # 상단 색상 바
+        _rrect(draw, x0, cy0, x1, cy0 + 6, 4, col)
+
+        # 숫자 뱃지
+        num = str(idx + 1)
+        _rrect(draw, x0 + 16, cy0 + 22, x0 + 46, cy0 + 52, 14,
+               col if is_hi else BORDER)
+        _center(draw, x0 + 31, cy0 + 24, num, _f(18, True), C_WHITE)
+
+        # 제목
+        draw.text((x0 + 60, cy0 + 24), title, font=_f(20, True),
+                  fill=C_WHITE if is_hi else (180, 175, 215))
+
+        # 설명
+        dy = cy0 + 70
+        for line in desc.split('\n'):
+            _center(draw, x0 + CW//2, dy, line, _f(13), C_SUB)
+            dy += 22
+
+        # 버튼
+        btn_col = col if is_hi else BORDER
+        _rrect(draw, x0 + 20, y1 - 50, x1 - 20, y1 - 16, 10, btn_col)
+        _center(draw, x0 + CW//2, y1 - 46,
+                '선택  →' if is_hi else '클릭하여 선택', _f(14, True),
+                C_WHITE if is_hi else C_HINT)
+
+        _MODE_REGIONS[idx] = (x0, cy0, x1, y1)
+
+    # 힌트
+    _center(draw, W//2, H - 30, '키보드: 1 = 카메라    2 = 영상 파일    ESC = 기본값(카메라)',
+            _f(12), C_HINT)
+    return _cv(img)
+
+
+def _select_mode() -> str:
+    """모드 선택 화면 — 'camera' 또는 'video' 반환"""
+    selected = [None]
+    hover    = [-1]
+
+    def on_mouse(event, x, y, flags, _):
+        h = -1
+        for idx, (x0, y0, x1, y1) in _MODE_REGIONS.items():
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                h = idx
+                break
+        hover[0] = h
+        if event == cv2.EVENT_LBUTTONDOWN and h >= 0:
+            selected[0] = ['camera', 'video'][h]
+
+    WIN = 'Smart HVAC - 모드 선택'
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WIN, W, H)
+    for _ in range(5):
+        cv2.waitKey(1)
+    cv2.setMouseCallback(WIN, on_mouse)
+
+    while selected[0] is None:
+        cv2.imshow(WIN, _render_mode(hover[0]))
+        k = cv2.waitKey(30) & 0xFF
+        if k == ord('1'):
+            selected[0] = 'camera'
+        elif k == ord('2'):
+            selected[0] = 'video'
+        elif k == 27:
+            selected[0] = 'camera'
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+            selected[0] = 'camera'
+
+    cv2.destroyWindow(WIN)
+    return selected[0]
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 2단계: 영상 파일 선택
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+VIDEO_EXTS = ('.mp4', '.avi', '.mov', '.mkv', '.m4v', '.webm')
+
+def _find_videos() -> list[str]:
+    """현재 디렉터리와 하위 2단계에서 영상 파일 목록 반환"""
+    results = []
+    for ext in VIDEO_EXTS:
+        results += glob.glob(f'**/*{ext}', recursive=False)
+        results += glob.glob(f'*{ext}')
+        results += glob.glob(f'videos/*{ext}')
+        results += glob.glob(f'data/*{ext}')
+    seen = set()
+    out  = []
+    for p in results:
+        p = os.path.normpath(p)
+        if p not in seen:
+            seen.add(p)
+            if os.path.isfile(p):
+                out.append(p)
+    return sorted(out)
+
+
+def _render_filepicker(files: list[str], cursor: int, typed: str,
+                       error: str = '') -> np.ndarray:
+    img  = Image.new('RGB', (W, H), BG)
+    draw = ImageDraw.Draw(img)
+
+    # 헤더
+    draw.rectangle([(0, 0), (W, 72)], fill=BG_HDR)
+    _center(draw, W//2, 10, '영상 파일 선택', _f(22, True), C_TITLE)
+    _center(draw, W//2, 44, '분석할 영상 파일을 선택하세요', _f(13), C_SUB)
+
+    # 파일 목록 영역
+    LIST_Y = 84
+    ROW_H  = 38
+    MAX_ROWS = 9
+    draw.rectangle([(16, LIST_Y), (W - 16, LIST_Y + ROW_H * MAX_ROWS + 8)],
+                   fill=BG_CARD, outline=BORDER)
+
+    start = max(0, cursor - MAX_ROWS + 1)
+    display = files[start: start + MAX_ROWS]
+
+    for i, path in enumerate(display):
+        gy      = LIST_Y + 4 + i * ROW_H
+        real_i  = start + i
+        is_sel  = (real_i == cursor)
+
+        if is_sel:
+            draw.rectangle([(17, gy), (W - 17, gy + ROW_H - 2)], fill=BG_SEL)
+            draw.rectangle([(17, gy), (19, gy + ROW_H - 2)], fill=C_BLUE)
+
+        # 파일명 + 크기
+        name = os.path.basename(path)
+        size = os.path.getsize(path) / (1024 * 1024) if os.path.exists(path) else 0
+        draw.text((28, gy + 8), name, font=_f(14, is_sel),
+                  fill=C_WHITE if is_sel else (175, 170, 210))
+        draw.text((W - 110, gy + 10), f'{size:.1f} MB',
+                  font=_f(12), fill=C_SUB)
+        # 상위 경로
+        parent = os.path.dirname(path)
+        if parent:
+            draw.text((28 + _f(14).getbbox(name)[2] + 8, gy + 10),
+                      f'  ({parent})', font=_f(12), fill=C_HINT)
+
+    if not files:
+        _center(draw, W//2, LIST_Y + ROW_H * 3,
+                '현재 폴더에 영상 파일이 없습니다', _f(15), C_SUB)
+
+    # 직접 입력 칸
+    input_y = LIST_Y + ROW_H * MAX_ROWS + 20
+    draw.text((16, input_y), '직접 입력 (경로 또는 YouTube URL):', font=_f(14), fill=C_SUB)
+    border_col = (220, 60, 60) if error else BORDER_HI
+    BTN_W = 90
+    _rrect(draw, 100, input_y - 4, W - BTN_W - 24, input_y + 26, 6,
+           BG_CARD, border_col, width=1)
+    display_text = typed[-58:] if len(typed) > 58 else typed
+    draw.text((108, input_y), display_text + '|', font=_f(14), fill=C_WHITE)
+    # 붙여넣기 버튼
+    _rrect(draw, W - BTN_W - 20, input_y - 4, W - 16, input_y + 26, 6,
+           (60, 80, 160), (100, 120, 220), width=1)
+    _center(draw, W - BTN_W // 2 - 18, input_y + 2, '📋 붙여넣기', _f(13), C_WHITE)
+    if error:
+        draw.text((16, input_y + 28), error, font=_f(12), fill=(220, 80, 80))
+
+    # 힌트
+    hint_y = H - 44
+    draw.rectangle([(0, hint_y - 6), (W, H)], fill=(22, 18, 38))
+    _center(draw, W//2, hint_y,
+            '↑↓: 선택   Enter: 확인   ESC: 뒤로   Ctrl+V 또는 [붙여넣기] 버튼 클릭',
+            _f(12), C_HINT)
+
+    return _cv(img)
+
+
+def _select_video() -> Optional[str]:
+    """영상 파일 선택 화면 — 경로 문자열 또는 None(취소) 반환"""
+    files  = _find_videos()
+    cursor = [0]
+    typed  = ['']
+    error  = ['']
+
+    WIN = 'Smart HVAC - 영상 파일 선택'
+    paste_clicked = [False]
+
+    LIST_Y_CB = 84
+    ROW_H_CB  = 38
+    MAX_ROWS_CB = 9
+    BTN_W_CB  = 90
+    input_y_cb = LIST_Y_CB + ROW_H_CB * MAX_ROWS_CB + 20
+
+    def on_mouse(event, x, y, flags, _):
+        if event != cv2.EVENT_LBUTTONDOWN:
+            return
+        # 붙여넣기 버튼 영역
+        if (W - BTN_W_CB - 20 <= x <= W - 16) and (input_y_cb - 4 <= y <= input_y_cb + 26):
+            paste_clicked[0] = True
+            return
+        # 파일 목록 클릭
+        if LIST_Y_CB <= y <= LIST_Y_CB + ROW_H_CB * MAX_ROWS_CB:
+            idx = (y - LIST_Y_CB) // ROW_H_CB
+            start = max(0, cursor[0] - MAX_ROWS_CB + 1)
+            real_i = start + idx
+            if 0 <= real_i < len(files):
+                cursor[0] = real_i
+
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WIN, W, H)
+    for _ in range(5):
+        cv2.waitKey(1)
+    cv2.setMouseCallback(WIN, on_mouse)
+
+    while True:
+        if paste_clicked[0]:
+            paste_clicked[0] = False
+            pasted = _clipboard_paste()
+            if pasted:
+                typed[0] = pasted
+                error[0] = ''
+        cv2.imshow(WIN, _render_filepicker(files, cursor[0], typed[0], error[0]))
+        k = cv2.waitKey(50) & 0xFF
+
+        if k == 27:                         # ESC → 취소
+            cv2.destroyWindow(WIN)
+            return None
+
+        elif k == 13 or k == 10:            # Enter → 확인
+            if typed[0].strip():
+                p = typed[0].strip().strip("'\"")
+                if 'youtube.com' in p or 'youtu.be' in p:
+                    cv2.destroyWindow(WIN)
+                    return p
+                elif os.path.isfile(p):
+                    cv2.destroyWindow(WIN)
+                    return p
+                else:
+                    error[0] = f'파일을 찾을 수 없음: {p[-50:]}'
+            elif files:
+                cv2.destroyWindow(WIN)
+                return files[cursor[0]]
+
+        elif k == 82 or k == 0:             # 위쪽 화살표
+            cursor[0] = max(0, cursor[0] - 1)
+
+        elif k == 84 or k == 1:             # 아래쪽 화살표
+            cursor[0] = min(len(files) - 1, cursor[0] + 1)
+
+        elif k == 8 or k == 127:            # Backspace
+            typed[0] = typed[0][:-1]
+            error[0] = ''
+
+        elif k == 22:                       # Ctrl+V
+            pasted = _clipboard_paste()
+            if pasted:
+                typed[0] = pasted  # 경로 전체 붙여넣기
+
+        elif 32 <= k <= 126:                # 출력 가능 ASCII
+            typed[0] += chr(k)
+
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+            cv2.destroyWindow(WIN)
+            return None
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 3단계: 환경 프로파일 선택 (기존 로직 유지 + 키보드 단축키 추가)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+CARD_REGIONS: dict = {}
+
 
 def _icon_office(draw, cx, cy, col):
-    """빌딩 아이콘"""
-    # 건물 본체
     draw.rectangle([(cx-26, cy-28), (cx+26, cy+24)], fill=col)
-    # 창문 6개
     for wx in [cx-18, cx-4, cx+10]:
         for wy in [cy-22, cy-8]:
-            draw.rectangle([(wx, wy), (wx+8, wy+9)], fill=(255, 255, 255))
-    # 출입문
-    draw.rectangle([(cx-7, cy+8), (cx+7, cy+24)], fill=(255, 255, 255))
+            draw.rectangle([(wx, wy), (wx+8, wy+9)], fill=(255,255,255))
+    draw.rectangle([(cx-7, cy+8), (cx+7, cy+24)], fill=(255,255,255))
 
 
 def _icon_home(draw, cx, cy, col):
-    """집 아이콘"""
-    # 지붕 (삼각형)
     draw.polygon([(cx, cy-32), (cx-28, cy-8), (cx+28, cy-8)], fill=col)
-    # 벽
     draw.rectangle([(cx-22, cy-8), (cx+22, cy+24)], fill=col)
-    # 문
-    draw.rectangle([(cx-8, cy+8), (cx+8, cy+24)], fill=(255, 255, 255))
-    # 창문
-    draw.rectangle([(cx-18, cy-4), (cx-8,  cy+6)],  fill=(255, 255, 255))
-    draw.rectangle([(cx+8,  cy-4), (cx+18, cy+6)],  fill=(255, 255, 255))
+    draw.rectangle([(cx-8,  cy+8), (cx+8,  cy+24)], fill=(255,255,255))
+    draw.rectangle([(cx-18, cy-4), (cx-8,  cy+6)],  fill=(255,255,255))
+    draw.rectangle([(cx+8,  cy-4), (cx+18, cy+6)],  fill=(255,255,255))
 
 
 def _icon_gym(draw, cx, cy, col):
-    """덤벨 아이콘"""
-    # 바
     draw.rectangle([(cx-26, cy-4), (cx+26, cy+4)], fill=col)
-    # 왼쪽 웨이트 (두 겹)
     draw.rectangle([(cx-38, cy-15), (cx-26, cy+15)], fill=col)
     draw.rectangle([(cx-46, cy-10), (cx-36, cy+10)], fill=col)
-    # 오른쪽 웨이트 (두 겹)
     draw.rectangle([(cx+26, cy-15), (cx+38, cy+15)], fill=col)
     draw.rectangle([(cx+36, cy-10), (cx+46, cy+10)], fill=col)
 
 
 def _icon_facility(draw, cx, cy, col):
-    """방패 아이콘"""
-    pts = [(cx, cy-32), (cx+24, cy-18),
-           (cx+24, cy+4), (cx, cy+26),
-           (cx-24, cy+4), (cx-24, cy-18)]
+    pts = [(cx, cy-32), (cx+24, cy-18), (cx+24, cy+4),
+           (cx, cy+26), (cx-24, cy+4), (cx-24, cy-18)]
     draw.polygon(pts, fill=col)
-    # 별 대신 간단한 마크 (V 체크)
     draw.line([(cx-10, cy+2), (cx-2, cy+10), (cx+12, cy-8)],
-              fill=(255, 255, 255), width=4)
+              fill=(255,255,255), width=4)
 
 
 _ICON_FN = {
@@ -128,130 +467,186 @@ _ICON_FN = {
 }
 
 
-# ── 화면 렌더링 ───────────────────────────────────────────────────────────────
-
-def _render(hover_key: str | None = None) -> np.ndarray:
-    img  = Image.new('RGB', (W, H), BG)
+def _render_profile(hover_key: str | None) -> np.ndarray:
+    img  = Image.new('RGB', (W, H), (245, 247, 252))
     draw = ImageDraw.Draw(img)
 
-    # ── 헤더 ─────────────────────────────────────────────────────────────────
-    draw.rectangle([(0, 0), (W, 80)], fill=HEADER_BG)
+    draw.rectangle([(0, 0), (W, 80)], fill=(17, 24, 52))
     draw.text((32, 12), 'Smart HVAC',
-              font=_f(24, bold=True), fill=(255, 255, 255))
+              font=_f(24, True), fill=(255,255,255))
     draw.text((32, 46), '사용 공간을 선택하면 최적화된 제어 파라미터가 자동 적용됩니다.',
               font=_f(14), fill=(140, 150, 200))
 
-    # ── 카드 ─────────────────────────────────────────────────────────────────
-    keys   = list(PROFILES.keys())
-    n      = len(keys)
-    PAD    = 18
-    CW     = (W - PAD * (n + 1)) // n   # 카드 너비
-    CH     = 370                         # 카드 높이
-    card_y = 96
+    keys = list(PROFILES.keys())
+    n    = len(keys)
+    PAD  = 18
+    CW   = (W - PAD * (n + 1)) // n
+    CH   = 370
+    cy0  = 96
 
     CARD_REGIONS.clear()
-
     for i, key in enumerate(keys):
         prof = PROFILES[key]
         cx0  = PAD + i * (CW + PAD)
-        cy0  = card_y
         cx1  = cx0 + CW
         cy1  = cy0 + CH
-
         CARD_REGIONS[key] = (cx0, cy0, cx1, cy1)
 
-        is_hover = (key == hover_key)
-        shadow   = (200, 205, 220) if is_hover else BORDER
-        card_col = (252, 253, 255) if is_hover else CARD_BG
-
-        # 카드 배경 (호버 시 살짝 강조)
-        _rrect(draw, cx0, cy0, cx1, cy1, 14, card_col, shadow,
-               width=2 if is_hover else 1)
-
-        # 상단 포인트 바
+        is_hi  = (key == hover_key)
+        shadow = (200, 205, 220) if is_hi else (220, 223, 235)
+        _rrect(draw, cx0, cy0, cx1, cy1, 14,
+               (252,253,255) if is_hi else (255,255,255),
+               shadow, width=2 if is_hi else 1)
         col = prof.icon_color
-        _rrect(draw, cx0, cy0, cx1, cy0 + 6, 4, col)
+        _rrect(draw, cx0, cy0, cx1, cy0+6, 4, col)
 
-        # 아이콘
+        # 숫자 뱃지
+        _rrect(draw, cx0+10, cy0+12, cx0+34, cy0+36, 10,
+               col if is_hi else (220,222,235))
+        _center(draw, cx0+22, cy0+13, str(i+1), _f(14, True),
+                (255,255,255) if is_hi else (150,150,170))
+
         icon_cx = cx0 + CW // 2
-        icon_cy = cy0 + 60
-        _ICON_FN[key](draw, icon_cx, icon_cy, col)
-
-        # 이름
-        _center(draw, icon_cx, cy0 + 112,
-                prof.name, _f(22, bold=True), TXT)
-
-        # 설명
-        _center(draw, icon_cx, cy0 + 144,
-                prof.desc, _f(13), TXT_S)
-
-        # 구분선
-        draw.line([(cx0 + 16, cy0 + 166), (cx1 - 16, cy0 + 166)],
-                  fill=BORDER, width=1)
-
-        # 특징 목록
+        _ICON_FN[key](draw, icon_cx, cy0 + 60, col)
+        _center(draw, icon_cx, cy0+112, prof.name, _f(22, True), (22,22,36))
+        _center(draw, icon_cx, cy0+144, prof.desc, _f(13), (98,102,125))
+        draw.line([(cx0+16, cy0+166), (cx1-16, cy0+166)],
+                  fill=(220,223,235), width=1)
         fy = cy0 + 178
         for feat in prof.features:
-            draw.text((cx0 + 18, fy), f'·  {feat}',
-                      font=_f(13), fill=TXT_S)
+            draw.text((cx0+18, fy), f'·  {feat}', font=_f(13), fill=(98,102,125))
             fy += 22
+        btn_col = col if is_hi else (230, 232, 240)
+        btn_txt = (255,255,255) if is_hi else (165,168,185)
+        _rrect(draw, cx0+14, cy1-44, cx1-14, cy1-14, 10, btn_col)
+        _center(draw, icon_cx, cy1-40, '탭하여 선택', _f(14, True), btn_txt)
 
-        # 하단 선택 버튼
-        btn_col = col if is_hover else (230, 232, 240)
-        btn_txt = (255, 255, 255) if is_hover else TXT_H
-        _rrect(draw, cx0 + 14, cy1 - 44, cx1 - 14, cy1 - 14,
-               10, btn_col)
-        _center(draw, icon_cx, cy1 - 40,
-                '탭하여 선택', _f(14, bold=True), btn_txt)
-
-    # ── 하단 힌트 ─────────────────────────────────────────────────────────────
-    hint = 'VLM 분석 결과가 있으면 항상 VLM 값이 우선 적용됩니다.  프로파일은 VLM 실패 시 fallback 으로만 사용됩니다.'
-    hf  = _f(12)
-    hb  = hf.getbbox(hint)
-    draw.text((W // 2 - (hb[2] - hb[0]) // 2, H - 26),
-              hint, font=hf, fill=TXT_H)
-
-    return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)
+    hint = f'키보드 숫자 1~{n} 로 빠르게 선택 가능  |  ESC = 기본값(사무실)'
+    hb   = _f(12).getbbox(hint)
+    draw.text((W//2 - (hb[2]-hb[0])//2, H-26), hint, font=_f(12),
+              fill=(165,168,185))
+    return _cv(img)
 
 
-# ── 공개 API ──────────────────────────────────────────────────────────────────
-
-WIN_NAME = 'Smart HVAC - 환경 설정'
-
-
-def show_and_select() -> EnvProfile:
-    """
-    환경 선택 화면을 표시하고 클릭된 프로파일을 반환합니다.
-    ESC 또는 창 닫기 → 사무실(office) 기본값 반환.
-    """
+def _select_profile() -> EnvProfile:
     selected  = [None]
     hover_key = [None]
 
-    def on_mouse(event, x, y, flags, _param):
-        # 호버 업데이트
+    def on_mouse(event, x, y, flags, _):
         hk = None
         for key, (x1, y1, x2, y2) in CARD_REGIONS.items():
             if x1 <= x <= x2 and y1 <= y <= y2:
                 hk = key
                 break
         hover_key[0] = hk
-
         if event == cv2.EVENT_LBUTTONDOWN and hk:
             selected[0] = hk
 
-    cv2.namedWindow(WIN_NAME, cv2.WINDOW_AUTOSIZE)
-    cv2.setMouseCallback(WIN_NAME, on_mouse)
+    WIN = 'Smart HVAC - 환경 설정'
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WIN, W, H)
+    for _ in range(5):
+        cv2.waitKey(1)
+    cv2.setMouseCallback(WIN, on_mouse)
 
+    keys = list(PROFILES.keys())
     while selected[0] is None:
-        frame = _render(hover_key[0])
-        cv2.imshow(WIN_NAME, frame)
-        key = cv2.waitKey(30) & 0xFF
-        if key == 27:                   # ESC → 기본값
+        cv2.imshow(WIN, _render_profile(hover_key[0]))
+        k = cv2.waitKey(30) & 0xFF
+        if k == 27:
             selected[0] = 'office'
-        if cv2.getWindowProperty(WIN_NAME, cv2.WND_PROP_VISIBLE) < 1:
-            selected[0] = 'office'     # 창 닫기 → 기본값
+        # 숫자 키 1~N
+        elif ord('1') <= k <= ord('9'):
+            idx = k - ord('1')
+            if idx < len(keys):
+                selected[0] = keys[idx]
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+            selected[0] = 'office'
 
-    cv2.destroyWindow(WIN_NAME)
+    cv2.destroyWindow(WIN)
     prof = PROFILES[selected[0]]
     print(f'[환경] 선택됨: {prof.name} ({prof.key})')
     return prof
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 공개 API
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+WIN_NAME = 'Smart HVAC - 환경 설정'   # 하위 호환용
+
+
+def _select_initial_conditions() -> tuple:
+    """트랙바로 초기 실내온도/습도/외기온도 설정. (indoor_temp, indoor_humid, outdoor_temp) 반환."""
+    WIN = 'Smart HVAC - 초기 환경 조건'
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(WIN, 640, 300)
+
+    # 트랙바 범위: 온도 -20~50°C (오프셋 +20), 습도 10~100%
+    TEMP_OFFSET = 20   # 트랙바 0 = -20°C
+    cv2.createTrackbar('실내온도 -20~50 C', WIN, 26 + TEMP_OFFSET, 70, lambda v: None)
+    cv2.createTrackbar('실내습도  10~100%', WIN, 50,               90, lambda v: None)
+    cv2.createTrackbar('외기온도 -20~50 C', WIN, 30 + TEMP_OFFSET, 70, lambda v: None)
+
+    print("\n[초기 환경] 트랙바로 조절 후 아무 키나 누르세요.")
+
+    while True:
+        it = cv2.getTrackbarPos('실내온도 -20~50 C', WIN) - TEMP_OFFSET
+        ih = cv2.getTrackbarPos('실내습도  10~100%', WIN) + 10
+        ot = cv2.getTrackbarPos('외기온도 -20~50 C', WIN) - TEMP_OFFSET
+
+        canvas = np.zeros((300, 640, 3), dtype=np.uint8)
+        canvas[:] = (20, 20, 35)
+        cv2.putText(canvas, 'Initial Environment Conditions',
+                    (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (180, 160, 255), 2)
+        cv2.putText(canvas, f'Indoor Temp  : {it:+d} C',
+                    (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (80, 200, 255), 2)
+        cv2.putText(canvas, f'Indoor Humid : {ih} %',
+                    (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (80, 255, 160), 2)
+        cv2.putText(canvas, f'Outdoor Temp : {ot:+d} C',
+                    (20, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 180, 80), 2)
+        cv2.putText(canvas, 'Press any key to confirm',
+                    (20, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (120, 120, 120), 1)
+        cv2.imshow(WIN, canvas)
+
+        k = cv2.waitKey(100) & 0xFF
+        if k != 255:
+            break
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+            break
+
+    indoor_temp  = float(cv2.getTrackbarPos('실내온도 -20~50 C', WIN) - TEMP_OFFSET)
+    indoor_humid = float(cv2.getTrackbarPos('실내습도  10~100%', WIN) + 10)
+    outdoor_temp = float(cv2.getTrackbarPos('외기온도 -20~50 C', WIN) - TEMP_OFFSET)
+
+    cv2.destroyWindow(WIN)
+    print(f"[초기 환경] 실내 {indoor_temp:.0f}°C / {indoor_humid:.0f}%  외기 {outdoor_temp:.0f}°C")
+    return indoor_temp, indoor_humid, outdoor_temp
+
+
+def show_and_select() -> StartupResult:
+    """
+    시작 화면을 순서대로 표시하고 StartupResult 반환.
+    ESC / 창 닫기 시 기본값(camera + office) 반환.
+    """
+    # 1단계: 모드
+    mode = _select_mode()
+
+    # 2단계: 영상 파일 (video 모드일 때만)
+    video_path = None
+    if mode == 'video':
+        video_path = _select_video()
+        if video_path is None:
+            mode = 'camera'
+
+    # 3단계: 환경 프로파일
+    profile = _select_profile()
+
+    # 4단계: 초기 환경 조건 (video 모드일 때만)
+    indoor_temp, indoor_humid, outdoor_temp = 26.0, 50.0, 30.0
+    if mode == 'video':
+        indoor_temp, indoor_humid, outdoor_temp = _select_initial_conditions()
+
+    return StartupResult(mode=mode, video_path=video_path, profile=profile,
+                         indoor_temp=indoor_temp, indoor_humid=indoor_humid,
+                         outdoor_temp=outdoor_temp)
