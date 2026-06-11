@@ -1,4 +1,8 @@
+import atexit
+import base64
+import glob
 import os
+import time
 import torch
 import json
 import re
@@ -6,6 +10,7 @@ import platform
 import subprocess
 import tempfile
 import cv2
+import requests
 from PIL import Image
 from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
 from qwen_vl_utils import process_vision_info
@@ -14,15 +19,21 @@ from qwen_vl_utils import process_vision_info
 class VLMProcessor:
     """
     [Vision Language Model 처리기]
-    모델: Qwen2-VL-2B-Instruct (디바이스 자동 선택)
+    모델: Qwen3-VL-2B / Qwen2-VL-2B GGUF (Jetson) 또는 Qwen2-VL-2B HF (Mac/PC)
     역할: 카메라 프레임에서 PMV 입력 파라미터 및 맥락 신호를 추출합니다.
 
     ── 디바이스 우선순위 ───────────────────────────────────────────────────────
       1. LCPP (llama.cpp CUDA INT4 — Jetson, libggml-cuda.so 존재 시) — 최우선
-      2. TRT  (Jetson TRT-LLM INT4 엔진 존재 시) — float16
-      3. MPS  (Apple Silicon M1~M5)              — float16
-      4. CUDA (NVIDIA GPU, HuggingFace)          — float16
-      5. CPU  (그 외 모든 환경)                   — float16
+         · llama-server 상주 프로세스 (모델 1회 로드, HTTP 추론) 우선
+         · llama-server 불가 시 llama-mtmd-cli subprocess 폴백
+      2. MPS  (Apple Silicon M1~M5)              — float16
+      3. CUDA (NVIDIA GPU, HuggingFace)          — float16
+      4. CPU  (그 외 모든 환경)                   — float16
+
+    ── GGUF 모델 자동 탐색 ─────────────────────────────────────────────────────
+    ~/llama.cpp/models/*/ 에서 (모델.gguf + mmproj*.gguf) 쌍을 찾되,
+    디렉토리/파일명에 'qwen3'가 포함된 모델을 우선 사용.
+    환경변수 LCPP_GGUF / LCPP_MMPROJ 로 직접 지정 가능.
 
     ── 감지 항목 ──────────────────────────────────────────────────────────────
     PMV 입력:
@@ -32,20 +43,34 @@ class VLMProcessor:
 
     맥락 신호:
       room_size   : 공간 크기 ('small'|'medium'|'large') → 15/30/60 m²
-      heat_source : 조리기구 등 열원 → 복사온도(tr) 보정 및 환기 우선
+      heat_source : 조리기구 등 열원 → 복사온도(tr) 보정
 
     ※ 인원 수(people)는 YOLODetector가 전담 — VLM 프롬프트에서 제거됨.
     """
 
-    TRT_ENGINE_PATH  = "./qwen2vl_engine"  # Jetson TRT 엔진 경로
-
     # llama.cpp CUDA INT4 경로 (Jetson: ~/llama.cpp/build)
-    LCPP_BIN  = os.path.expanduser("~/llama.cpp/build/bin/llama-mtmd-cli")
-    LCPP_LIB  = os.path.expanduser("~/llama.cpp/build/ggml/src/ggml-cuda/libggml-cuda.so")
-    LCPP_LIB2 = os.path.expanduser("~/llama.cpp/build/bin/libggml-cuda.so")
-    LCPP_GGUF = os.path.expanduser("~/llama.cpp/models/Qwen2-VL-2B/qwen2vl-2b-q4km.gguf")
-    LCPP_MMPR = os.path.expanduser("~/llama.cpp/models/Qwen2-VL-2B/mmproj-qwen2vl-2b-f16.gguf")
-    LCPP_NGL  = 99  # GPU에 오프로드할 레이어 수 (99 = 전체)
+    LCPP_BIN    = os.path.expanduser("~/llama.cpp/build/bin/llama-mtmd-cli")
+    LCPP_SERVER = os.path.expanduser("~/llama.cpp/build/bin/llama-server")
+    LCPP_LIB    = os.path.expanduser("~/llama.cpp/build/ggml/src/ggml-cuda/libggml-cuda.so")
+    LCPP_LIB2   = os.path.expanduser("~/llama.cpp/build/bin/libggml-cuda.so")
+    LCPP_MODELS = os.path.expanduser("~/llama.cpp/models")
+    LCPP_NGL    = 99      # GPU에 오프로드할 레이어 수 (99 = 전체)
+    LCPP_PORT   = 8090    # llama-server 포트 (127.0.0.1 전용)
+    LCPP_SERVER_BOOT_SEC = 180  # 서버 기동(모델 로드) 대기 한도
+
+    # llama-server json_schema 강제용 출력 스키마
+    JSON_SCHEMA = {
+        "type": "object",
+        "properties": {
+            "sleeves":     {"type": "string", "enum": ["long", "short"]},
+            "outerwear":   {"type": "string", "enum": ["yes", "no"]},
+            "activity":    {"type": "string", "enum": ["lying", "sitting", "standing",
+                                                       "walking", "cooking", "exercising"]},
+            "room_size":   {"type": "string", "enum": ["small", "medium", "large"]},
+            "heat_source": {"type": "string", "enum": ["yes", "no"]},
+        },
+        "required": ["sleeves", "outerwear", "activity", "room_size", "heat_source"],
+    }
 
     # PMV 입력 매핑 테이블 (ISO 7730:2005 근거)
     CLO_BASE  = {'short': 0.5, 'long': 1.0}
@@ -65,29 +90,66 @@ class VLMProcessor:
     TR_HEAT_OFFSET = 4.0  # 열원 감지 시 복사온도 보정값 (°C)
 
     @staticmethod
+    def _find_lcpp_model():
+        """GGUF (모델, mmproj) 쌍 자동 탐색.
+
+        우선순위:
+          1. 환경변수 LCPP_GGUF + LCPP_MMPROJ
+          2. ~/llama.cpp/models/*/ 중 'qwen3' 포함 디렉토리
+          3. 그 외 (모델+mmproj 쌍이 있는 첫 디렉토리)
+
+        Returns:
+            (gguf_path, mmproj_path) 또는 (None, None)
+        """
+        env_gguf   = os.environ.get("LCPP_GGUF")
+        env_mmproj = os.environ.get("LCPP_MMPROJ")
+        if env_gguf and env_mmproj and \
+           os.path.exists(env_gguf) and os.path.exists(env_mmproj):
+            return env_gguf, env_mmproj
+
+        candidates = []   # (priority, gguf, mmproj)
+        for d in sorted(glob.glob(os.path.join(VLMProcessor.LCPP_MODELS, "*"))):
+            if not os.path.isdir(d):
+                continue
+            ggufs   = sorted(glob.glob(os.path.join(d, "*.gguf")))
+            mmprojs = [g for g in ggufs if "mmproj" in os.path.basename(g).lower()]
+            models  = [g for g in ggufs if "mmproj" not in os.path.basename(g).lower()]
+            if not mmprojs or not models:
+                continue
+            # Q4 양자화 모델 우선
+            q4 = [m for m in models if "q4" in os.path.basename(m).lower()]
+            model = q4[0] if q4 else models[0]
+            prio  = 0 if "qwen3" in os.path.basename(d).lower() else 1
+            candidates.append((prio, model, mmprojs[0]))
+
+        if not candidates:
+            return None, None
+        candidates.sort(key=lambda c: c[0])
+        return candidates[0][1], candidates[0][2]
+
+    @staticmethod
     def _lcpp_cuda_available() -> bool:
         """llama.cpp CUDA 백엔드 실행 가능 여부 확인."""
         cuda_lib = (os.path.exists(VLMProcessor.LCPP_LIB) or
                     os.path.exists(VLMProcessor.LCPP_LIB2))
-        return (cuda_lib and
-                os.path.exists(VLMProcessor.LCPP_BIN) and
-                os.path.exists(VLMProcessor.LCPP_GGUF) and
-                os.path.exists(VLMProcessor.LCPP_MMPR))
+        if not cuda_lib:
+            return False
+        has_bin = (os.path.exists(VLMProcessor.LCPP_BIN) or
+                   os.path.exists(VLMProcessor.LCPP_SERVER))
+        gguf, mmproj = VLMProcessor._find_lcpp_model()
+        return has_bin and gguf is not None
 
     @staticmethod
     def _select_device():
         """
         최적 추론 디바이스 자동 선택
           - llama.cpp CUDA INT4 (libggml-cuda.so 존재): 'lcpp', float16  (최우선)
-          - Jetson TRT 엔진 존재:                        'trt',  float16
           - Apple Silicon (MPS 사용 가능):               'mps',  float16
           - NVIDIA GPU (CUDA 사용 가능):                 'cuda', float16
           - CPU 전용 또는 그 외:                         'cpu',  float16
         """
         if VLMProcessor._lcpp_cuda_available():
             return "lcpp", torch.float16
-        if os.path.exists(VLMProcessor.TRT_ENGINE_PATH):
-            return "trt", torch.float16
         if torch.backends.mps.is_available():
             return "mps", torch.float16
         if torch.cuda.is_available():
@@ -109,25 +171,25 @@ class VLMProcessor:
                                           else self.LCPP_LIB2)
                 bin_dir = os.path.dirname(self.LCPP_BIN)
                 self._lcpp_lib_dir = f"{lib_dir}:{bin_dir}"
-                self.model     = None  # subprocess 방식 — 모델 객체 없음
+                self._lcpp_gguf, self._lcpp_mmproj = self._find_lcpp_model()
+                self.model     = None  # llama.cpp 방식 — HF 모델 객체 없음
                 self.processor = None
+                self._server_proc = None
+
                 print(f"✅ [VLM] llama.cpp CUDA INT4 준비 완료")
-                print(f"   모델: {self.LCPP_GGUF}")
-                print(f"   mmproj: {self.LCPP_MMPR}")
+                print(f"   모델: {self._lcpp_gguf}")
+                print(f"   mmproj: {self._lcpp_mmproj}")
                 print(f"   GPU 레이어: {self.LCPP_NGL}")
+
+                # llama-server 상주 프로세스 기동 시도 (모델 1회 로드 → 추론 수 초)
+                # 실패하면 기존 llama-mtmd-cli subprocess 방식으로 폴백
+                if os.path.exists(self.LCPP_SERVER):
+                    self._start_lcpp_server()
+                else:
+                    print("ℹ️ [VLM] llama-server 바이너리 없음 — CLI 모드 사용 "
+                          "(매 추론마다 모델 재로딩, 느림)")
                 return  # 아래 HF 로드 건너뜀
 
-            elif self.device == "trt":
-                # Jetson TRT-LLM 런타임 로드 (convert_tensorrt.py --vlm-int4 실행 후)
-                from tensorrt_llm.runtime import ModelRunner
-                self.model = ModelRunner.from_dir(
-                    engine_dir=self.TRT_ENGINE_PATH,
-                    rank=0,
-                )
-                self.processor = AutoProcessor.from_pretrained(
-                    self.model_id, local_files_only=True
-                )
-                print(f"✅ [VLM] TRT-LLM INT4 엔진 로드 완료 ({self.TRT_ENGINE_PATH})")
             elif self.device == "mps":
                 # Apple Silicon: device_map 미사용, 로드 후 .to('mps')
                 # attn_implementation="eager": MPS SDPA 차원 버그 우회
@@ -162,6 +224,125 @@ class VLMProcessor:
             self.model     = None
             self.processor = None
 
+    # ── llama-server 상주 프로세스 ────────────────────────────────────────────
+
+    def _lcpp_env(self) -> dict:
+        env = os.environ.copy()
+        env["LD_LIBRARY_PATH"] = (
+            self._lcpp_lib_dir + ":" + env.get("LD_LIBRARY_PATH", "")
+        )
+        # Jetson 통합 메모리에서 CUDA VMM이 OOM을 유발 → cudaMalloc 방식으로 강제
+        env["GGML_CUDA_NO_VMM"] = "1"
+        return env
+
+    def _start_lcpp_server(self):
+        """llama-server를 백그라운드로 띄우고 /health 응답까지 대기."""
+        cmd = [
+            self.LCPP_SERVER,
+            "-m",       self._lcpp_gguf,
+            "--mmproj", self._lcpp_mmproj,
+            "-ngl",     str(self.LCPP_NGL),
+            "--host",   "127.0.0.1",
+            "--port",   str(self.LCPP_PORT),
+            "--no-warmup",   # warmup이 최대 해상도로 OOM 유발
+        ]
+        log_path = os.path.join(tempfile.gettempdir(), "llama-server-hvac.log")
+        try:
+            self._server_log = open(log_path, "w")
+            self._server_proc = subprocess.Popen(
+                cmd, env=self._lcpp_env(),
+                stdout=self._server_log, stderr=subprocess.STDOUT,
+            )
+            atexit.register(self.close)
+        except Exception as e:
+            print(f"⚠️ [VLM] llama-server 기동 실패: {e} — CLI 모드로 폴백")
+            self._server_proc = None
+            return
+
+        print(f"⏳ [VLM] llama-server 기동 중 (최대 {self.LCPP_SERVER_BOOT_SEC}초)...")
+        deadline = time.time() + self.LCPP_SERVER_BOOT_SEC
+        url = f"http://127.0.0.1:{self.LCPP_PORT}/health"
+        while time.time() < deadline:
+            if self._server_proc.poll() is not None:
+                print(f"⚠️ [VLM] llama-server 비정상 종료 (로그: {log_path}) — CLI 모드로 폴백")
+                self._server_proc = None
+                return
+            try:
+                r = requests.get(url, timeout=2)
+                if r.status_code == 200:
+                    print(f"✅ [VLM] llama-server 준비 완료 (port {self.LCPP_PORT}, "
+                          f"로그: {log_path})")
+                    return
+            except requests.RequestException:
+                pass
+            time.sleep(1.0)
+
+        print(f"⚠️ [VLM] llama-server 기동 타임아웃 — CLI 모드로 폴백")
+        self.close()
+
+    def close(self):
+        """llama-server 프로세스 종료 (atexit 및 수동 정리용)."""
+        proc = getattr(self, "_server_proc", None)
+        if proc is not None and proc.poll() is None:
+            proc.terminate()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+        self._server_proc = None
+        log = getattr(self, "_server_log", None)
+        if log is not None and not log.closed:
+            log.close()
+
+    def _analyze_frame_lcpp_server(self, frame):
+        """llama-server HTTP API로 프레임 분석 (json_schema 강제)."""
+        h, w = frame.shape[:2]
+        if w > 640 or h > 480:
+            frame = cv2.resize(frame, (640, 480))
+        ok, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+        if not ok:
+            return self._default_result()
+        b64 = base64.b64encode(jpg.tobytes()).decode()
+
+        prompt = (
+            "Look at the image and classify:\n"
+            "sleeves: long or short\n"
+            "outerwear: yes or no\n"
+            "activity: lying, sitting, standing, walking, cooking, exercising\n"
+            "room_size: small, medium, large\n"
+            "heat_source: yes or no (stove, heater, oven, open flame)\n"
+            "Answer in JSON."
+        )
+        payload = {
+            "messages": [{
+                "role": "user",
+                "content": [
+                    {"type": "image_url",
+                     "image_url": {"url": f"data:image/jpeg;base64,{b64}"}},
+                    {"type": "text", "text": prompt},
+                ],
+            }],
+            "max_tokens":  120,
+            "temperature": 0.3,
+            "response_format": {
+                "type": "json_schema",
+                "json_schema": {"name": "hvac_context", "schema": self.JSON_SCHEMA},
+            },
+        }
+        try:
+            r = requests.post(
+                f"http://127.0.0.1:{self.LCPP_PORT}/v1/chat/completions",
+                json=payload, timeout=120,
+            )
+            r.raise_for_status()
+            raw = r.json()["choices"][0]["message"]["content"]
+            print(f"[VLM OUTPUT]\n{raw}\n", flush=True)
+            return self._parse_response(raw)
+        except Exception as e:
+            print(f"⚠️ [VLM-SERVER] 추론 실패: {e} — CLI 모드로 폴백")
+            self.close()
+            return self._analyze_frame_lcpp(frame)
+
     def analyze_frame(self, frame):
         """
         프레임 분석 → PMV 입력 파라미터 + 맥락 신호 반환
@@ -180,6 +361,8 @@ class VLMProcessor:
             ※ 인원 수는 YOLODetector.count_people()에서 별도 반환
         """
         if self.device == "lcpp":
+            if self._server_proc is not None and self._server_proc.poll() is None:
+                return self._analyze_frame_lcpp_server(frame)
             return self._analyze_frame_lcpp(frame)
 
         if self.model is None or self.processor is None:
@@ -265,17 +448,10 @@ class VLMProcessor:
                 frame = cv2.resize(frame, (640, 480))
             cv2.imwrite(tmp_img, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
 
-            env = os.environ.copy()
-            env["LD_LIBRARY_PATH"] = (
-                self._lcpp_lib_dir + ":" + env.get("LD_LIBRARY_PATH", "")
-            )
-            # Jetson 통합 메모리에서 CUDA VMM이 OOM을 유발 → cudaMalloc 방식으로 강제
-            env["GGML_CUDA_NO_VMM"] = "1"
-
             cmd = [
                 self.LCPP_BIN,
-                "-m",      self.LCPP_GGUF,
-                "--mmproj", self.LCPP_MMPR,
+                "-m",      self._lcpp_gguf,
+                "--mmproj", self._lcpp_mmproj,
                 "-ngl",    str(self.LCPP_NGL),
                 "--image", tmp_img,
                 "-p",      prompt,
@@ -287,7 +463,8 @@ class VLMProcessor:
             ]
 
             result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=120, env=env
+                cmd, capture_output=True, text=True, timeout=120,
+                env=self._lcpp_env(),
             )
 
             # stdout에서 ggml/llama 로그 및 echo된 프롬프트 라인 제거
@@ -329,7 +506,7 @@ class VLMProcessor:
             return self._parse_response(raw)
 
         except subprocess.TimeoutExpired:
-            print("⚠️ [VLM-LCPP] 추론 타임아웃 (60s)")
+            print("⚠️ [VLM-LCPP] 추론 타임아웃 (120s)")
             return self._default_result()
         except Exception as e:
             print(f"⚠️ [VLM-LCPP] 오류: {e}")

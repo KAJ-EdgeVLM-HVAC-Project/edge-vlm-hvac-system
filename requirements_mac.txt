@@ -22,9 +22,12 @@ accelerate
 opencv-python
 pillow
 pandas
+matplotlib
 requests
 ultralytics
 python-dotenv
+yt-dlp
+pynput
 
 # ── 실행 예시 ─────────────────────────────────────────────────────────────────
 #

@@ -172,45 +172,22 @@ def _draw_header(draw: ImageDraw.Draw, y: int) -> int:
     return y + 64
 
 
-def _pm_color(pm10: int) -> tuple:
-    if pm10 <= 30:   return C_GREEN
-    if pm10 <= 80:   return C_ORANGE
-    return C_RED
-
-
 def _draw_outdoor(draw: ImageDraw.Draw, y: int,
                   temp: float, humid: float,
                   weather: str, wind: float,
                   ds: dict = None) -> int:
-    draw.rectangle([(0, y), (PANEL_W, y + 180)], fill=BG_SECT)
+    draw.rectangle([(0, y), (PANEL_W, y + 145)], fill=BG_SECT)
     y = _sect_header(draw, y, '  실외 환경')
     y = _row2(draw, y,
               '기온',  f'{temp:.1f}°C',  _temp_color(temp, True),
               '습도',  f'{humid:.0f}%',  C_VAL)
     y = _row1(draw, y, '날씨', weather[:24], C_CYAN)
     y = _row1(draw, y, '풍속', f'{wind:.1f} m/s')
-    pm10 = int(ds.get('pm10', 0)) if ds else 0
-    pm25 = int(ds.get('pm25', 0)) if ds else 0
-    y = _row2(draw, y,
-              'PM10', f'{pm10} ㎍/㎥', _pm_color(pm10),
-              'PM2.5', f'{pm25} ㎍/㎥', _pm_color(pm25))
     return y
 
 
-def _khai_str(khai) -> tuple:
-    """통합대기환경지수 문자열 + 색상"""
-    try:
-        v = int(khai)
-    except (TypeError, ValueError):
-        return '-', C_LABEL
-    if v <= 1:   return '좋음', C_GREEN
-    if v <= 2:   return '보통', C_VAL
-    if v <= 3:   return '나쁨', C_ORANGE
-    return '매우나쁨', C_RED
-
-
 def _draw_indoor(draw: ImageDraw.Draw, y: int, hvac, ds: dict) -> int:
-    draw.rectangle([(0, y), (PANEL_W, y + 145)], fill=BG_SECT)
+    draw.rectangle([(0, y), (PANEL_W, y + 110)], fill=BG_SECT)
     y = _sect_header(draw, y, '  실내 환경')
     y = _row2(draw, y,
               '온도',  f'{hvac.indoor_temp:.1f}°C', _temp_color(hvac.indoor_temp, False),
@@ -219,8 +196,24 @@ def _draw_indoor(draw: ImageDraw.Draw, y: int, hvac, ds: dict) -> int:
     y = _row2(draw, y,
               'PMV',   f'{pmv:+.2f}',                    _pmv_color(pmv),
               '상태',  ds.get('comfort_msg', '-')[:14],   _pmv_color(pmv))
-    khai_s, khai_c = _khai_str(ds.get('khai', 0))
-    y = _row1(draw, y, '대기질', khai_s, khai_c)
+    return y
+
+
+def _draw_energy(draw: ImageDraw.Draw, y: int, ds: dict) -> int:
+    """AI 제어 vs 룰베이스 에너지 비교 섹션"""
+    draw.rectangle([(0, y), (PANEL_W, y + 110)], fill=BG_SECT)
+    y = _sect_header(draw, y, '  에너지 (AI vs 룰베이스)')
+    ai_wh   = ds.get('ai_wh', 0.0)
+    rb_wh   = ds.get('rb_wh', 0.0)
+    sav_pct = ds.get('savings_pct', 0.0)
+    comfort = ds.get('comfort_rate', 0.0)
+    sav_col = C_GREEN if sav_pct > 0 else (C_RED if sav_pct < 0 else C_VAL)
+    y = _row2(draw, y,
+              'AI 소비',   f'{ai_wh:.1f} Wh',  C_CYAN,
+              '룰베이스',   f'{rb_wh:.1f} Wh',  C_ORANGE)
+    y = _row2(draw, y,
+              '절감률',    f'{sav_pct:+.1f}%', sav_col,
+              '쾌적율',    f'{comfort:.0f}%',  C_GREEN if comfort >= 80 else C_VAL)
     return y
 
 
@@ -245,9 +238,7 @@ def _draw_hvac(draw: ImageDraw.Draw, y: int, hvac, sm,
     y = _row2(draw, y,
               '모드',    mode_str,                   mode_col,
               '설정온도', f'{hvac.target_temp:.0f}°C', C_VAL)
-    y = _row2(draw, y,
-              '풍량',    f'Fan {hvac.fan_speed}',    C_VAL,
-              '창문',    '열림' if hvac.window_open else '닫힘', C_CYAN)
+    y = _row1(draw, y, '풍량', f'Fan {hvac.fan_speed}', C_VAL)
     _state_labels = {'EMPTY': '공실', 'ARRIVAL': '도착',
                      'STEADY': '재실 중', 'LUNCH_BREAK': '점심 외출',
                      'PRE_DEPARTURE': '퇴실 준비'}
@@ -415,7 +406,6 @@ def build(cam_h: int, hvac, sm,
         cam_h       : 카메라 프레임 높이 (패널 높이에 맞춤)
         hvac        : HVACSimulator 인스턴스
         sm          : StateManager 인스턴스
-        em          : EnergyMonitor 인스턴스
         out_temp    : 외부 기온 (°C)
         out_humid   : 외부 습도 (%)
         out_weather : 날씨 설명
@@ -442,6 +432,7 @@ def build(cam_h: int, hvac, sm,
         y = _draw_env_override(draw, y, env_override, _ENV_VARS, _ENV_LABEL)
     y  = _draw_outdoor(draw, y, out_temp, out_humid, out_weather, out_wind, ds)
     y  = _draw_indoor(draw, y, hvac, ds)
+    y  = _draw_energy(draw, y, ds)
     y  = _draw_hvac(draw, y, hvac, sm, manual_ctrl)
     y  = _draw_occupancy(draw, y, ds)
 

@@ -27,8 +27,6 @@ HVAC 시나리오 시뮬레이터
   results/<시나리오명>.png   ── 3-패널 시각화 (PMV / 온도 / HVAC 상태)
 """
 
-from __future__ import annotations
-
 import argparse
 import io
 import json
