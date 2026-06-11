@@ -360,13 +360,13 @@ def main(analysis_interval: int = 30):
 
     # ── 로딩 화면 ─────────────────────────────────────────────────────────────
     if not HEADLESS:
-        _load_img = np.zeros((300, 700, 3), dtype=np.uint8)
+        _load_img = np.full((300, 700, 3), (249, 246, 244), dtype=np.uint8)  # BGR 라이트
         cv2.putText(_load_img, "VLM Model Loading...", (60, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (180, 160, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 108, 79), 2)
         cv2.putText(_load_img, f"Environment: {env_profile.name}", (60, 160),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (160, 160, 160), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (134, 116, 110), 1)
         cv2.putText(_load_img, "Please wait (10~30 sec)", (60, 220),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 180, 100), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (74, 163, 22), 1)
         cv2.namedWindow("HVAC Operator", cv2.WINDOW_NORMAL)
         cv2.imshow("HVAC Operator", _load_img)
         cv2.waitKey(1)
@@ -724,7 +724,9 @@ def main(analysis_interval: int = 30):
                                  vlm_analyzing=vlm_analyzing_ev.is_set())
             panel_h = panel.shape[0]
             if cam_h < panel_h:
-                pad        = np.zeros((panel_h - cam_h, display_frame.shape[1], 3), dtype=np.uint8)
+                # 카메라 아래 여백을 패널 배경색(라이트)으로 채움
+                pad        = np.full((panel_h - cam_h, display_frame.shape[1], 3),
+                                     (249, 246, 244), dtype=np.uint8)
                 frame_disp = np.vstack([display_frame, pad])
             else:
                 frame_disp = display_frame
@@ -885,13 +887,13 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
     # ── 로딩 화면 표시 ───────────────────────────────────────────────────────
     _loading_win = "HVAC Video Analysis"
     if not HEADLESS:
-        _load_img = np.zeros((300, 700, 3), dtype=np.uint8)
+        _load_img = np.full((300, 700, 3), (249, 246, 244), dtype=np.uint8)  # BGR 라이트
         cv2.putText(_load_img, "VLM Model Loading...", (60, 100),
-                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (180, 160, 255), 2)
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 108, 79), 2)
         cv2.putText(_load_img, os.path.basename(video_path), (60, 160),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (160, 160, 160), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (134, 116, 110), 1)
         cv2.putText(_load_img, "Please wait (10~30 sec)", (60, 220),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (100, 180, 100), 1)
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (74, 163, 22), 1)
         cv2.namedWindow(_loading_win, cv2.WINDOW_NORMAL)
         cv2.resizeWindow(_loading_win, 700, 300)
         cv2.imshow(_loading_win, _load_img)
@@ -1100,15 +1102,15 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
             h_f, w_f = disp.shape[:2]
             vt    = int(video_time)
 
-            # 하단 정보 패널 (검정 배경)
+            # 하단 정보 패널 (라이트 배경)
             panel_h = 160
-            panel = np.zeros((panel_h, w_f, 3), dtype=np.uint8)
-            panel[:] = (20, 20, 30)
+            panel = np.full((panel_h, w_f, 3), (249, 246, 244), dtype=np.uint8)
+            cv2.line(panel, (0, 7), (w_f, 7), (236, 231, 228), 1)
 
             # 진행 바
             bar_w = int(w_f * pct / 100)
-            cv2.rectangle(panel, (0, 0), (w_f, 6), (40,40,50), -1)
-            cv2.rectangle(panel, (0, 0), (bar_w, 6), (80,160,255), -1)
+            cv2.rectangle(panel, (0, 0), (w_f, 6), (236, 231, 228), -1)
+            cv2.rectangle(panel, (0, 0), (bar_w, 6), (255, 108, 79), -1)
 
             ai_on_str  = f"ON  Tgt:{hvac_ai.target_temp:.0f}C Fan{hvac_ai.fan_speed}" if hvac_ai.is_on  else "OFF"
             rb_on_str  = f"ON  Tgt:{RB_SETPOINT:.0f}C Fan{RB_FAN}"                   if people_count>0 else "OFF"
@@ -1118,27 +1120,27 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                 (f"[{vlm_step}] {vt//60:02d}:{vt%60:02d} / "
                  f"{int(duration_sec)//60:02d}:{int(duration_sec)%60:02d}  ({pct:.0f}%)"
                  f"   People:{people_count}   Outdoor:{out_temp:.1f}C",
-                 (180, 180, 180)),
-                # AI 제어 상태
+                 (134, 124, 120)),
+                # AI 제어 상태 (블루)
                 (f"[AI]  실내:{hvac_ai.indoor_temp:.1f}C  습도:{hvac_ai.indoor_humid:.0f}%"
                  f"  PMV:{'--' if ai_pmv is None else f'{ai_pmv:+.2f}'}  {ai_on_str}  {energy_ai_wh:.1f}Wh",
-                 (100, 200, 255)),
-                # 룰베이스 상태
+                 (235, 118, 37)),
+                # 룰베이스 상태 (오렌지)
                 (f"[RB]  실내:{hvac_rb.indoor_temp:.1f}C  습도:{hvac_rb.indoor_humid:.0f}%"
                  f"  PMV:{'--' if rb_pmv is None else f'{rb_pmv:+.2f}'}  {rb_on_str}  {energy_rb_wh:.1f}Wh",
-                 (255, 160, 80)),
-                # VLM 분석 결과
+                 (10, 138, 228)),
+                # VLM 분석 결과 (그린)
                 (f"[VLM] {last_vlm_data.get('activity','-')}"
                  f"  sleeves:{last_vlm_data.get('sleeves','-')}"
                  f"  clo:{last_vlm_data.get('clo',0):.2f}"
                  f"  met:{last_vlm_data.get('met',0):.1f}"
                  f"   Saved:{energy_rb_wh-energy_ai_wh:.1f}Wh",
-                 (120, 255, 140)),
+                 (74, 163, 22)),
             ]
             for ri, (text, color) in enumerate(rows):
-                y = 22 + ri * 32
-                cv2.putText(panel, text, (8, y), cv2.FONT_HERSHEY_SIMPLEX, 0.48, (0,0,0), 3)
-                cv2.putText(panel, text, (8, y), cv2.FONT_HERSHEY_SIMPLEX, 0.48, color, 1)
+                y = 26 + ri * 32
+                cv2.putText(panel, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.48, color, 1,
+                            cv2.LINE_AA)
 
             last_panel = panel
             if not HEADLESS:
