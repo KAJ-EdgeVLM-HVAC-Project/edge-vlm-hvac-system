@@ -81,8 +81,8 @@ WORK_END_HOUR   = 18
 HEADLESS = (os.getenv("HVAC_HEADLESS") == "1" or
             (platform.system() == "Linux" and not os.getenv("DISPLAY")))
 
-YOLO_EVERY_N_FRAMES = 90  # YOLO 인원 감지 주기 (3초마다 — 30fps 기준)
-PMV_UPDATE_SEC      = 5   # PMV 재계산 + PID 제어 주기 (초)
+YOLO_INTERVAL_SEC = 3.0   # YOLO 인원 감지 주기 (초) — 루프 속도와 무관하게 시간 기준
+PMV_UPDATE_SEC    = 5     # PMV 재계산 + PID 제어 주기 (초)
 
 
 # ── CSV 초기화 / 저장 ──────────────────────────────────────────────────────────
@@ -491,6 +491,7 @@ def main(analysis_interval: int = 30):
     out_temp, out_humid, out_weather, out_wind = 20.0, 50.0, "unknown", 0.0
     last_weather_fetch = 0.0
     last_pmv_update    = 0.0
+    last_yolo_time     = 0.0   # 0 → 첫 프레임에서 즉시 감지
     frame_count        = 0
 
     # ── 사용자 선호 + PMV 이력 ────────────────────────────────────────────────
@@ -579,8 +580,9 @@ def main(analysis_interval: int = 30):
         motion_det.update(frame)
         display_state["motion_score"] = motion_det.current_score
 
-        # ── YOLO 인원 감지 ────────────────────────────────────────────────────
-        if frame_count % YOLO_EVERY_N_FRAMES == 0:
+        # ── YOLO 인원 감지 (3초마다, 시간 기준) ───────────────────────────────
+        if time.time() - last_yolo_time >= YOLO_INTERVAL_SEC:
+            last_yolo_time = time.time()
             if use_camera:
                 yolo_count = yolo.count_people(frame)
                 if yolo_count >= 0:
@@ -590,6 +592,9 @@ def main(analysis_interval: int = 30):
                 # 시뮬레이션 모드: 사람 1명으로 가정 (상태 전이 테스트 가능)
                 last_people_count = 1
                 last_count_source = "sim"
+            # 대시보드 인원 표시 즉시 갱신 (VLM 결과 대기 없이)
+            display_state["people_count"] = last_people_count
+            display_state["count_source"] = last_count_source
 
         # ── 날씨 갱신 (60초마다) ─────────────────────────────────────────────
         if time.time() - last_weather_fetch >= WEATHER_FETCH_SEC:
@@ -714,7 +719,21 @@ def main(analysis_interval: int = 30):
 
         # ── 운영자 대시보드 + 사용자 창 렌더링 ──────────────────────────────
         if not HEADLESS:
-            display_frame = cv2.resize(frame, (1280, 720)) if frame.shape[1] > 1280 else frame
+            display_frame = cv2.resize(frame, (1280, 720)) if frame.shape[1] > 1280 else frame.copy()
+
+            # YOLO 감지 박스 오버레이 (눈으로 감지 여부 확인용)
+            if use_camera and yolo.available:
+                sx = display_frame.shape[1] / frame.shape[1]
+                sy = display_frame.shape[0] / frame.shape[0]
+                for (x1, y1, x2, y2, bconf) in yolo.last_boxes:
+                    p1 = (int(x1 * sx), int(y1 * sy))
+                    p2 = (int(x2 * sx), int(y2 * sy))
+                    cv2.rectangle(display_frame, p1, p2, (74, 163, 22), 2)
+                    cv2.putText(display_frame, f'person {bconf:.2f}',
+                                (p1[0], max(16, p1[1] - 6)),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (74, 163, 22), 1,
+                                cv2.LINE_AA)
+
             cam_h   = display_frame.shape[0]
             panel   = dash.build(cam_h, hvac, sm,
                                  out_temp, out_humid, out_weather, out_wind,
