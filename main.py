@@ -162,14 +162,19 @@ def vlm_worker(vlm, frame_lock, shared_frame_ref,
 
 # ── VLM 결과 처리 ─────────────────────────────────────────────────────────────
 
-def _seasonal_clo(profile: EnvProfile) -> float:
-    """계절(월)에 따른 CLO 기본값 반환 — VLM 실패 시 fallback 전용"""
-    m = datetime.now().month
-    if 6 <= m <= 8:
-        return profile.clo_summer
-    if m in (3, 4, 5, 9, 10, 11):
-        return profile.clo_spring_fall
-    return profile.clo_winter
+def _fallback_clo(out_temp: float) -> float:
+    """외부온도 기반 CLO 추정 — VLM 실패 시 fallback 전용.
+
+    사람은 그날의 바깥 날씨에 맞춰 입고 들어오므로, 달력(계절)이 아닌
+    외부온도로 착의량을 추정한다. VLM이 정상이면 항상 VLM 감지값 우선.
+    """
+    if out_temp >= 22.0:
+        return 0.5   # 더운 날 — 반팔 수준
+    if out_temp >= 15.0:
+        return 0.8   # 선선한 날 — 긴팔 가벼운 차림
+    if out_temp >= 5.0:
+        return 1.0   # 쌀쌀한 날 — 긴팔 + 스웨터
+    return 1.3       # 추운 날 — 긴팔 + 아우터
 
 
 def _predict_occupancy(log_file: str) -> dict:
@@ -621,7 +626,8 @@ def main(analysis_interval: int = 30):
             else:
                 heat_src = "no"
                 eff_met  = env_profile.met_baseline
-                eff_clo  = _seasonal_clo(env_profile)
+                eff_clo  = _fallback_clo(env_override["outdoor_temp"]
+                                         if env_override["enabled"] else out_temp)
                 met_src  = "default"
 
             tr_c    = s_temp + (VLMProcessor.TR_HEAT_OFFSET if heat_src == "yes" else 0.0)

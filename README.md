@@ -70,7 +70,7 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 | `rh` 상대습도 | SHT31 센서 / 시뮬레이션 | % |
 | `vel` 기류속도 | **고정 0.1 m/s** | ISO 7730 정지기류 기준 (팬 속도 미반영) |
 | `met` 대사율 | VLMProcessor / MotionDetector | 1.0(착석) ~ 3.0(운동) |
-| `clo` 착의량 | VLMProcessor / 계절 fallback | 0.5(반팔) ~ 1.3(아우터) |
+| `clo` 착의량 | VLMProcessor / 외부온도 기반 fallback | 0.5(반팔) ~ 1.3(아우터) |
 
 ### 제어 전략 (AI vs 규칙기반)
 
