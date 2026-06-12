@@ -29,7 +29,8 @@ from sensor_interface import SensorInterface
 from control_logic import decide_control
 from energy_monitor import EnergyMonitor, POWER_W, RB_SETPOINT, RB_FAN, rb_watts
 from env_profiles import PROFILES, EnvProfile
-from startup_screen import show_and_select, StartupResult
+from startup_screen import show_and_select, StartupResult, \
+    screen_size as startup_screen_size
 import dashboard as dash
 import user_display as udisplay
 
@@ -372,7 +373,7 @@ def main(analysis_interval: int = 30):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (134, 116, 110), 1)
         cv2.putText(_load_img, "Please wait (10~30 sec)", (60, 220),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (74, 163, 22), 1)
-        cv2.namedWindow("HVAC Operator", cv2.WINDOW_NORMAL)
+        cv2.namedWindow("HVAC Operator", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
         cv2.imshow("HVAC Operator", _load_img)
         cv2.waitKey(1)
 
@@ -725,7 +726,10 @@ def main(analysis_interval: int = 30):
 
         # ── 운영자 대시보드 + 사용자 창 렌더링 ──────────────────────────────
         if not HEADLESS:
-            display_frame = cv2.resize(frame, (1280, 720)) if frame.shape[1] > 1280 else frame.copy()
+            # 카메라 뷰 폭 720px — 패널과 합쳐도 창 축소율이 낮아 글자가 선명함
+            DISP_W = 720
+            disp_h = int(frame.shape[0] * DISP_W / frame.shape[1])
+            display_frame = cv2.resize(frame, (DISP_W, disp_h))
 
             # YOLO 감지 박스 오버레이 (눈으로 감지 여부 확인용)
             if use_camera and yolo.available:
@@ -762,12 +766,29 @@ def main(analysis_interval: int = 30):
                 hvac, sm, display_state,
                 pref_state['value'], pmv_history, occ_pred, out_temp,
             )
+            if frame_count == 1:
+                # 리사이즈 가능한 창으로 생성 (imshow 기본은 고정 크기)
+                cv2.namedWindow("HVAC User", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+                cv2.resizeWindow("HVAC User", user_img.shape[1], user_img.shape[0])
             cv2.imshow("HVAC User", user_img)
 
-            # 첫 프레임: 창 위치 분리
+            # 첫 프레임: 화면 크기에 맞춰 두 창을 좌우로 자동 배치
             if frame_count == 1:
-                cv2.moveWindow("HVAC Operator", 0, 0)
-                cv2.moveWindow("HVAC User", combined.shape[1] + 10, 0)
+                scr_w, scr_h = startup_screen_size()
+                margin  = 16
+                user_w  = user_img.shape[1]
+                user_h  = user_img.shape[0]
+                # 운영자 창: 사용자 창 옆자리를 빼고 남는 폭에 비율 유지로 맞춤
+                op_w = min(combined.shape[1], scr_w - user_w - margin * 3)
+                op_h = int(op_w * combined.shape[0] / combined.shape[1])
+                max_h = scr_h - 80
+                if op_h > max_h:
+                    op_h = max_h
+                    op_w = int(op_h * combined.shape[1] / combined.shape[0])
+                cv2.resizeWindow("HVAC Operator", op_w, op_h)
+                cv2.moveWindow("HVAC Operator", margin, 28)
+                ux = min(margin * 2 + op_w, scr_w - user_w - margin)
+                cv2.moveWindow("HVAC User", ux, 28)
                 cv2.setMouseCallback("HVAC User", _user_mouse_cb, pref_state)
 
         # ── 키 입력 처리 ──────────────────────────────────────────────────────

@@ -18,7 +18,7 @@ from state_machine import SystemState
 PANEL_W = 680
 PAD     = 14          # 패널 좌우 여백
 GAP     = 8           # 카드 간 간격
-ROW_H   = 30          # 정보 행 높이
+ROW_H   = 34          # 정보 행 높이
 
 # ── 색상 팔레트 (RGB, 라이트) ─────────────────────────────────────────────────
 BG        = (244, 246, 249)   # 전체 배경 (아주 옅은 회색)
@@ -121,31 +121,31 @@ def _card_title(draw, y: int, title: str, color=C_TITLE,
                 right_text: str = None, right_color=C_MUTED) -> int:
     """카드 제목 (좌측 포인트 바 + 텍스트). 다음 행 y 반환."""
     bar_col = color if color != C_TITLE else C_ACCENT
-    _rrect(draw, PAD + 14, y + 8, PAD + 18, y + 24, 2, bar_col)
-    draw.text((PAD + 26, y + 6), title, font=_font(16, bold=True), fill=color)
+    _rrect(draw, PAD + 14, y + 9, PAD + 18, y + 27, 2, bar_col)
+    draw.text((PAD + 26, y + 6), title, font=_font(18, bold=True), fill=color)
     if right_text:
-        f  = _font(13)
+        f  = _font(14)
         tw = f.getbbox(right_text)[2] - f.getbbox(right_text)[0]
-        draw.text((PANEL_W - PAD - 14 - tw, y + 9), right_text,
+        draw.text((PANEL_W - PAD - 14 - tw, y + 10), right_text,
                   font=f, fill=right_color)
-    return y + 32
+    return y + 34
 
 
 def _row2(draw, y: int,
           lbl1: str, val1: str, col1: tuple,
           lbl2: str, val2: str, col2: tuple) -> int:
     x1, x2 = PAD + 26, PAD + 340
-    draw.text((x1,       y + 4), lbl1, font=_font(15), fill=C_LABEL)
-    draw.text((x1 + 86,  y + 3), val1, font=_font(17, bold=True), fill=col1)
-    draw.text((x2,       y + 4), lbl2, font=_font(15), fill=C_LABEL)
-    draw.text((x2 + 86,  y + 3), val2, font=_font(17, bold=True), fill=col2)
+    draw.text((x1,       y + 5), lbl1, font=_font(17), fill=C_LABEL)
+    draw.text((x1 + 96,  y + 3), val1, font=_font(20, bold=True), fill=col1)
+    draw.text((x2,       y + 5), lbl2, font=_font(17), fill=C_LABEL)
+    draw.text((x2 + 96,  y + 3), val2, font=_font(20, bold=True), fill=col2)
     return y + ROW_H
 
 
 def _row1(draw, y: int, lbl: str, val: str, col: tuple = None) -> int:
     x1 = PAD + 26
-    draw.text((x1,      y + 4), lbl, font=_font(15), fill=C_LABEL)
-    draw.text((x1 + 86, y + 3), val, font=_font(17), fill=col or C_TXT)
+    draw.text((x1,      y + 5), lbl, font=_font(17), fill=C_LABEL)
+    draw.text((x1 + 96, y + 3), val, font=_font(20), fill=col or C_TXT)
     return y + ROW_H
 
 
@@ -221,22 +221,22 @@ def _get_solution(state: SystemState, pmv: float, hvac,
 
 def _draw_header(draw, y: int) -> int:
     """상단 헤더 — 흰 카드, 타이틀 + 시각"""
-    h = 54
+    h = 58
     _card(draw, y, h)
     # 포인트 도트
-    _rrect(draw, PAD + 16, y + 20, PAD + 28, y + 32, 6, C_ACCENT)
-    draw.text((PAD + 40, y + 12), 'VLM HVAC SYSTEM',
-              font=_font(21, bold=True), fill=C_TXT)
+    _rrect(draw, PAD + 16, y + 22, PAD + 30, y + 36, 7, C_ACCENT)
+    draw.text((PAD + 42, y + 13), 'VLM HVAC SYSTEM',
+              font=_font(24, bold=True), fill=C_TXT)
     ts = datetime.now().strftime('%Y-%m-%d  %H:%M:%S')
-    f  = _font(14)
+    f  = _font(15)
     tw = f.getbbox(ts)[2] - f.getbbox(ts)[0]
-    draw.text((PANEL_W - PAD - 16 - tw, y + 18), ts, font=f, fill=C_MUTED)
+    draw.text((PANEL_W - PAD - 16 - tw, y + 20), ts, font=f, fill=C_MUTED)
     return y + h + GAP
 
 
 def _draw_outdoor(draw, y: int, temp: float, humid: float,
                   weather: str, wind: float) -> int:
-    h = 32 + ROW_H * 2 + 6
+    h = 34 + ROW_H * 2 + 8
     _card(draw, y, h)
     cy = _card_title(draw, y, '실외 환경')
     cy = _row2(draw, cy,
@@ -249,7 +249,7 @@ def _draw_outdoor(draw, y: int, temp: float, humid: float,
 
 
 def _draw_indoor(draw, y: int, hvac, ds: dict) -> int:
-    h = 32 + ROW_H * 2 + 6
+    h = 34 + ROW_H * 2 + 8
     _card(draw, y, h)
     cy = _card_title(draw, y, '실내 환경')
     cy = _row2(draw, cy,
@@ -265,7 +265,7 @@ def _draw_indoor(draw, y: int, hvac, ds: dict) -> int:
 
 def _draw_energy(draw, y: int, ds: dict) -> int:
     """AI 제어 vs 룰베이스 에너지 비교"""
-    h = 32 + ROW_H * 2 + 6
+    h = 34 + ROW_H * 2 + 8
     _card(draw, y, h)
     cy = _card_title(draw, y, '에너지', right_text='AI vs 룰베이스')
     ai_wh   = ds.get('ai_wh', 0.0)
@@ -284,7 +284,7 @@ def _draw_energy(draw, y: int, ds: dict) -> int:
 
 def _draw_hvac(draw, y: int, hvac, sm, manual_ctrl: dict = None) -> int:
     is_manual = manual_ctrl is not None and manual_ctrl.get("enabled", False)
-    h = 32 + ROW_H * 2 + 6 + (26 if is_manual else 0)
+    h = 34 + ROW_H * 2 + 8 + (28 if is_manual else 0)
 
     if is_manual:
         _card(draw, y, h, bg=MAN_BG, border=MAN_BORDER)
@@ -314,13 +314,13 @@ def _draw_hvac(draw, y: int, hvac, sm, manual_ctrl: dict = None) -> int:
 
     if is_manual:
         draw.text((PAD + 26, cy + 2), 'P:전원  C:냉방  H:난방  +/-:온도  F:팬',
-                  font=_font(14), fill=MAN_TXT)
+                  font=_font(15), fill=MAN_TXT)
 
     return y + h + GAP
 
 
 def _draw_occupancy(draw, y: int, ds: dict) -> int:
-    h = 32 + ROW_H * 3 + 8 + ROW_H * 2 + 6
+    h = 34 + ROW_H * 5 + 8 + 10
     _card(draw, y, h)
     cy = _card_title(draw, y, '재실 / VLM 분석',
                      right_text=ds.get('last_analysis', '--:--:--'))
@@ -358,7 +358,7 @@ def _draw_occupancy(draw, y: int, ds: dict) -> int:
 def _draw_vlm_context(draw, y: int, vlm_data: dict | None,
                       vlm_time: str | None, analyzing: bool) -> int:
     """VLM 분석 결과 카드 — Raw 출력 + 파싱 결과"""
-    h = 32 + 70 + 8 + 22 + 18 * 3 + 8
+    h = 34 + 76 + 8 + 23 * 3 + 12
     _card(draw, y, h)
 
     status_col = C_ORANGE if analyzing else (C_GREEN if vlm_data else C_LABEL)
@@ -368,22 +368,21 @@ def _draw_vlm_context(draw, y: int, vlm_data: dict | None,
 
     if not vlm_data:
         draw.text((PAD + 26, cy + 12), 'VLM 분석 대기 중 — 카메라 프레임 수집 중...',
-                  font=_font(14), fill=C_LABEL)
+                  font=_font(16), fill=C_LABEL)
         return y + h + GAP
 
-    # Raw 출력 (코드 블록)
-    _rrect(draw, PAD + 16, cy, PANEL_W - PAD - 16, cy + 66, 8, CODE_BG)
-    raw   = str(vlm_data.get('raw_response', ''))
-    max_w = 74
-    ty    = cy + 7
-    for line in raw.replace('{', '{ ').replace(',', ', ').split('\n')[:3]:
-        line = line.strip()
-        if len(line) > max_w:
-            line = line[:max_w] + '...'
-        if line:
-            draw.text((PAD + 26, ty), line, font=_font(12), fill=CODE_TXT)
-            ty += 17
-    cy += 66 + 8
+    # Raw 출력 (코드 블록) — 긴 한 줄은 자동 줄바꿈해 최대 3줄 표시
+    _rrect(draw, PAD + 16, cy, PANEL_W - PAD - 16, cy + 76, 8, CODE_BG)
+    import textwrap
+    raw   = ' '.join(str(vlm_data.get('raw_response', '')).split())
+    lines = textwrap.wrap(raw, width=60)[:3]
+    if len(lines) == 3 and len(raw) > 180:
+        lines[2] = lines[2][:57] + '...'
+    ty = cy + 8
+    for line in lines:
+        draw.text((PAD + 26, ty), line, font=_font(14), fill=CODE_TXT)
+        ty += 20
+    cy += 76 + 8
 
     # 파싱 결과 (2열)
     fields = [
@@ -399,10 +398,10 @@ def _draw_vlm_context(draw, y: int, vlm_data: dict | None,
         col_x = PAD + 26 + (0 if i % 2 == 0 else half)
         v_col = (C_RED    if k == 'heat_source' and v == 'yes' else
                  C_ORANGE if v == 'yes' else C_TXT)
-        draw.text((col_x,       cy), k,      font=_font(13), fill=C_LABEL)
-        draw.text((col_x + 100, cy), str(v), font=_font(13, bold=True), fill=v_col)
+        draw.text((col_x,       cy), k,      font=_font(15), fill=C_LABEL)
+        draw.text((col_x + 110, cy), str(v), font=_font(15, bold=True), fill=v_col)
         if i % 2 == 1:
-            cy += 19
+            cy += 23
     return y + h + GAP
 
 
@@ -416,15 +415,15 @@ def _draw_solution(draw, y: int, end_y: int,
     cy = _card_title(draw, y, '솔루션', color=SOL_TXT)
     for line in _get_solution(state, pmv, hvac, out_temp, people):
         draw.text((PAD + 26, cy + 3), f'·  {line}',
-                  font=_font(16, bold=True), fill=SOL_TXT)
-        cy += 30
+                  font=_font(18, bold=True), fill=SOL_TXT)
+        cy += 32
     return end_y
 
 
 def _draw_env_override(draw, y: int, env: dict,
                        env_vars: list, env_label: dict) -> int:
     """환경 오버라이드 활성 시 표시되는 카드 (옅은 퍼플)"""
-    h = 32 + 24 * len(env_vars) + 6
+    h = 34 + 26 * len(env_vars) + 8
     _card(draw, y, h, bg=ENV_BG, border=ENV_BORDER)
     cy = _card_title(draw, y, 'ENV OVERRIDE', color=ENV_TXT,
                      right_text='E:OFF  [ ]:선택  +/-:조정', right_color=ENV_TXT)
@@ -437,10 +436,10 @@ def _draw_env_override(draw, y: int, env: dict,
         col    = ENV_TXT if is_sel else C_LABEL
         prefix = "▶ " if is_sel else "    "
         draw.text((PAD + 26, cy + 2), f"{prefix}{lbl}",
-                  font=_font(15, bold=is_sel), fill=col)
-        draw.text((PAD + 190, cy + 2), f"{val}{unit}",
-                  font=_font(15, bold=is_sel), fill=col)
-        cy += 24
+                  font=_font(16, bold=is_sel), fill=col)
+        draw.text((PAD + 200, cy + 2), f"{val}{unit}",
+                  font=_font(16, bold=is_sel), fill=col)
+        cy += 26
     return y + h + GAP
 
 
@@ -470,7 +469,7 @@ def build(cam_h: int, hvac, sm,
     Returns:
         np.ndarray: BGR 이미지 (panel_h, PANEL_W, 3)
     """
-    panel_h = max(cam_h, 1000)
+    panel_h = max(cam_h, 1100)
     img  = Image.new('RGB', (PANEL_W, panel_h), BG)
     draw = ImageDraw.Draw(img)
 
@@ -489,7 +488,7 @@ def build(cam_h: int, hvac, sm,
     y = _draw_occupancy(draw, y, ds)
 
     # VLM 컨텍스트 카드 — 솔루션 최소 공간(92px)이 남을 때만
-    if y + 202 <= panel_h - 92:
+    if y + 207 <= panel_h - 92:
         y = _draw_vlm_context(draw, y, vlm_data, vlm_time, vlm_analyzing)
 
     _draw_solution(draw, y, panel_h,

@@ -25,20 +25,46 @@ from env_profiles import PROFILES, EnvProfile
 W = 960
 H = 540
 
-# ── 색상 ──────────────────────────────────────────────────────────────────────
-BG        = ( 18,  18,  28)
-BG_CARD   = ( 30,  30,  46)
-BG_HDR    = ( 26,  22,  52)
-BG_SEL    = ( 40,  36,  72)
-BORDER    = ( 55,  52,  90)
-BORDER_HI = (120, 100, 220)
+# ── 색상 (라이트 테마) ────────────────────────────────────────────────────────
+BG        = (244, 246, 249)
+BG_CARD   = (255, 255, 255)
+BG_HDR    = (255, 255, 255)
+BG_SEL    = (240, 244, 255)
+BORDER    = (228, 231, 238)
+BORDER_HI = ( 79, 108, 255)
 C_WHITE   = (255, 255, 255)
-C_TITLE   = (185, 165, 255)
-C_SUB     = (130, 125, 165)
-C_HINT    = ( 90,  85, 120)
-C_GREEN   = ( 80, 210, 110)
-C_ORANGE  = (255, 172,  55)
-C_BLUE    = ( 80, 160, 255)
+C_TITLE   = ( 32,  36,  48)
+C_SUB     = (110, 116, 134)
+C_HINT    = (165, 170, 182)
+C_GREEN   = ( 22, 163,  74)
+C_ORANGE  = (228, 138,  10)
+C_BLUE    = ( 59, 130, 246)
+C_ACCENT  = ( 79, 108, 255)
+HDR_LINE  = (228, 231, 238)
+
+
+def screen_size() -> tuple:
+    """주 모니터 논리 해상도 (w, h). 감지 실패 시 (1440, 900)."""
+    try:
+        import tkinter
+        root = tkinter.Tk()
+        root.withdraw()
+        w, h = root.winfo_screenwidth(), root.winfo_screenheight()
+        root.destroy()
+        if w > 100 and h > 100:
+            return w, h
+    except Exception:
+        pass
+    return 1440, 900
+
+
+def _center_window(win: str, w: int, h: int):
+    """창을 화면 중앙에 배치."""
+    try:
+        sw, sh = screen_size()
+        cv2.moveWindow(win, max(0, (sw - w) // 2), max(0, (sh - h) // 2 - 20))
+    except Exception:
+        pass
 
 # ── 폰트 캐시 ─────────────────────────────────────────────────────────────────
 _fc: dict = {}
@@ -137,10 +163,11 @@ def _render_mode(hover: int) -> np.ndarray:
     img  = Image.new('RGB', (W, H), BG)
     draw = ImageDraw.Draw(img)
 
-    # 헤더
+    # 헤더 (흰 배경 + 하단 구분선 + 포인트 도트)
     draw.rectangle([(0, 0), (W, 90)], fill=BG_HDR)
-    _center(draw, W//2, 14, 'Smart HVAC  VLM System', _f(26, True), C_TITLE)
-    _center(draw, W//2, 52, 'VLM 기반 지능형 공조 제어 시스템', _f(14), C_SUB)
+    draw.line([(0, 90), (W, 90)], fill=HDR_LINE, width=1)
+    _center(draw, W//2, 12, 'Smart HVAC  VLM System', _f(27, True), C_TITLE)
+    _center(draw, W//2, 52, 'VLM 기반 지능형 공조 제어 시스템', _f(15), C_SUB)
 
     # 모드 카드 2개
     cards = [
@@ -148,9 +175,9 @@ def _render_mode(hover: int) -> np.ndarray:
         (1, '영상 파일 분석',   '저장된 영상으로 분석\n논문용 데이터 · 그래프 자동 생성', C_GREEN),
     ]
     _MODE_REGIONS.clear()
-    CW, CH = 390, 260
+    CW, CH = 390, 270
     gap = (W - CW * 2) // 3
-    cy0 = 130
+    cy0 = 124
 
     for idx, title, desc, col in cards:
         x0 = gap + idx * (CW + gap)
@@ -167,32 +194,32 @@ def _render_mode(hover: int) -> np.ndarray:
 
         # 숫자 뱃지
         num = str(idx + 1)
-        _rrect(draw, x0 + 16, cy0 + 22, x0 + 46, cy0 + 52, 14,
-               col if is_hi else BORDER)
-        _center(draw, x0 + 31, cy0 + 24, num, _f(18, True), C_WHITE)
+        _rrect(draw, x0 + 18, cy0 + 24, x0 + 50, cy0 + 56, 14,
+               col if is_hi else (231, 234, 241))
+        _center(draw, x0 + 34, cy0 + 28, num, _f(19, True),
+                C_WHITE if is_hi else (150, 155, 170))
 
         # 제목
-        draw.text((x0 + 60, cy0 + 24), title, font=_f(20, True),
-                  fill=C_WHITE if is_hi else (180, 175, 215))
+        draw.text((x0 + 66, cy0 + 28), title, font=_f(22, True), fill=C_TITLE)
 
         # 설명
-        dy = cy0 + 70
+        dy = cy0 + 84
         for line in desc.split('\n'):
-            _center(draw, x0 + CW//2, dy, line, _f(13), C_SUB)
-            dy += 22
+            _center(draw, x0 + CW//2, dy, line, _f(15), C_SUB)
+            dy += 26
 
         # 버튼
-        btn_col = col if is_hi else BORDER
-        _rrect(draw, x0 + 20, y1 - 50, x1 - 20, y1 - 16, 10, btn_col)
-        _center(draw, x0 + CW//2, y1 - 46,
-                '선택  →' if is_hi else '클릭하여 선택', _f(14, True),
-                C_WHITE if is_hi else C_HINT)
+        btn_col = col if is_hi else (240, 242, 247)
+        _rrect(draw, x0 + 20, y1 - 54, x1 - 20, y1 - 18, 10, btn_col)
+        _center(draw, x0 + CW//2, y1 - 48,
+                '선택  →' if is_hi else '클릭하여 선택', _f(15, True),
+                C_WHITE if is_hi else (150, 155, 170))
 
         _MODE_REGIONS[idx] = (x0, cy0, x1, y1)
 
     # 힌트
-    _center(draw, W//2, H - 30, '키보드: 1 = 카메라    2 = 영상 파일    ESC = 기본값(카메라)',
-            _f(12), C_HINT)
+    _center(draw, W//2, H - 36, '키보드: 1 = 카메라    2 = 영상 파일    ESC = 기본값(카메라)',
+            _f(13), C_HINT)
     return _cv(img)
 
 
@@ -212,8 +239,9 @@ def _select_mode() -> str:
             selected[0] = ['camera', 'video'][h]
 
     WIN = 'Smart HVAC - 모드 선택'
-    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.resizeWindow(WIN, W, H)
+    _center_window(WIN, W, H)
     for _ in range(5):
         cv2.waitKey(1)
     cv2.setMouseCallback(WIN, on_mouse)
@@ -264,17 +292,18 @@ def _render_filepicker(files: list[str], cursor: int, typed: str,
     img  = Image.new('RGB', (W, H), BG)
     draw = ImageDraw.Draw(img)
 
-    # 헤더
+    # 헤더 (흰 배경 + 하단 구분선)
     draw.rectangle([(0, 0), (W, 72)], fill=BG_HDR)
-    _center(draw, W//2, 10, '영상 파일 선택', _f(22, True), C_TITLE)
-    _center(draw, W//2, 44, '분석할 영상 파일을 선택하세요', _f(13), C_SUB)
+    draw.line([(0, 72), (W, 72)], fill=HDR_LINE, width=1)
+    _center(draw, W//2, 8, '영상 파일 선택', _f(23, True), C_TITLE)
+    _center(draw, W//2, 44, '분석할 영상 파일을 선택하세요', _f(14), C_SUB)
 
-    # 파일 목록 영역
+    # 파일 목록 영역 (흰 카드)
     LIST_Y = 84
     ROW_H  = 38
     MAX_ROWS = 9
-    draw.rectangle([(16, LIST_Y), (W - 16, LIST_Y + ROW_H * MAX_ROWS + 8)],
-                   fill=BG_CARD, outline=BORDER)
+    _rrect(draw, 16, LIST_Y, W - 16, LIST_Y + ROW_H * MAX_ROWS + 8, 10,
+           BG_CARD, BORDER)
 
     start = max(0, cursor - MAX_ROWS + 1)
     display = files[start: start + MAX_ROWS]
@@ -285,48 +314,45 @@ def _render_filepicker(files: list[str], cursor: int, typed: str,
         is_sel  = (real_i == cursor)
 
         if is_sel:
-            draw.rectangle([(17, gy), (W - 17, gy + ROW_H - 2)], fill=BG_SEL)
-            draw.rectangle([(17, gy), (19, gy + ROW_H - 2)], fill=C_BLUE)
+            _rrect(draw, 18, gy, W - 18, gy + ROW_H - 2, 6, BG_SEL)
+            draw.rectangle([(18, gy + 4), (21, gy + ROW_H - 6)], fill=C_BLUE)
 
         # 파일명 + 크기
         name = os.path.basename(path)
         size = os.path.getsize(path) / (1024 * 1024) if os.path.exists(path) else 0
-        draw.text((28, gy + 8), name, font=_f(14, is_sel),
-                  fill=C_WHITE if is_sel else (175, 170, 210))
-        draw.text((W - 110, gy + 10), f'{size:.1f} MB',
-                  font=_f(12), fill=C_SUB)
+        draw.text((32, gy + 7), name, font=_f(15, is_sel),
+                  fill=C_TITLE if is_sel else (90, 96, 114))
+        draw.text((W - 110, gy + 9), f'{size:.1f} MB',
+                  font=_f(13), fill=C_SUB)
         # 상위 경로
         parent = os.path.dirname(path)
         if parent:
-            draw.text((28 + _f(14).getbbox(name)[2] + 8, gy + 10),
-                      f'  ({parent})', font=_f(12), fill=C_HINT)
+            draw.text((32 + _f(15).getbbox(name)[2] + 8, gy + 9),
+                      f'  ({parent})', font=_f(13), fill=C_HINT)
 
     if not files:
         _center(draw, W//2, LIST_Y + ROW_H * 3,
-                '현재 폴더에 영상 파일이 없습니다', _f(15), C_SUB)
+                '현재 폴더에 영상 파일이 없습니다', _f(16), C_SUB)
 
     # 직접 입력 칸
     input_y = LIST_Y + ROW_H * MAX_ROWS + 20
-    draw.text((16, input_y), '직접 입력 (경로 또는 YouTube URL):', font=_f(14), fill=C_SUB)
+    draw.text((16, input_y + 2), '직접 입력 (경로 또는 YouTube URL):', font=_f(14), fill=C_SUB)
     border_col = (220, 60, 60) if error else BORDER_HI
-    BTN_W = 90
-    _rrect(draw, 100, input_y - 4, W - BTN_W - 24, input_y + 26, 6,
+    BTN_W = 96
+    _rrect(draw, 252, input_y - 4, W - BTN_W - 24, input_y + 28, 8,
            BG_CARD, border_col, width=1)
-    display_text = typed[-58:] if len(typed) > 58 else typed
-    draw.text((108, input_y), display_text + '|', font=_f(14), fill=C_WHITE)
+    display_text = typed[-48:] if len(typed) > 48 else typed
+    draw.text((262, input_y + 2), display_text + '|', font=_f(15), fill=C_TITLE)
     # 붙여넣기 버튼
-    _rrect(draw, W - BTN_W - 20, input_y - 4, W - 16, input_y + 26, 6,
-           (60, 80, 160), (100, 120, 220), width=1)
-    _center(draw, W - BTN_W // 2 - 18, input_y + 2, '📋 붙여넣기', _f(13), C_WHITE)
+    _rrect(draw, W - BTN_W - 20, input_y - 4, W - 16, input_y + 28, 8, C_BLUE)
+    _center(draw, W - BTN_W // 2 - 18, input_y + 2, '붙여넣기', _f(14, True), C_WHITE)
     if error:
-        draw.text((16, input_y + 28), error, font=_f(12), fill=(220, 80, 80))
+        draw.text((16, input_y + 34), error, font=_f(13), fill=(220, 60, 60))
 
     # 힌트
-    hint_y = H - 44
-    draw.rectangle([(0, hint_y - 6), (W, H)], fill=(22, 18, 38))
-    _center(draw, W//2, hint_y,
+    _center(draw, W//2, H - 34,
             '↑↓: 선택   Enter: 확인   ESC: 뒤로   Ctrl+V 또는 [붙여넣기] 버튼 클릭',
-            _f(12), C_HINT)
+            _f(13), C_HINT)
 
     return _cv(img)
 
@@ -344,14 +370,14 @@ def _select_video() -> Optional[str]:
     LIST_Y_CB = 84
     ROW_H_CB  = 38
     MAX_ROWS_CB = 9
-    BTN_W_CB  = 90
+    BTN_W_CB  = 96
     input_y_cb = LIST_Y_CB + ROW_H_CB * MAX_ROWS_CB + 20
 
     def on_mouse(event, x, y, flags, _):
         if event != cv2.EVENT_LBUTTONDOWN:
             return
         # 붙여넣기 버튼 영역
-        if (W - BTN_W_CB - 20 <= x <= W - 16) and (input_y_cb - 4 <= y <= input_y_cb + 26):
+        if (W - BTN_W_CB - 20 <= x <= W - 16) and (input_y_cb - 4 <= y <= input_y_cb + 28):
             paste_clicked[0] = True
             return
         # 파일 목록 클릭
@@ -362,8 +388,9 @@ def _select_video() -> Optional[str]:
             if 0 <= real_i < len(files):
                 cursor[0] = real_i
 
-    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.resizeWindow(WIN, W, H)
+    _center_window(WIN, W, H)
     for _ in range(5):
         cv2.waitKey(1)
     cv2.setMouseCallback(WIN, on_mouse)
@@ -468,14 +495,15 @@ _ICON_FN = {
 
 
 def _render_profile(hover_key: str | None) -> np.ndarray:
-    img  = Image.new('RGB', (W, H), (245, 247, 252))
+    img  = Image.new('RGB', (W, H), BG)
     draw = ImageDraw.Draw(img)
 
-    draw.rectangle([(0, 0), (W, 80)], fill=(17, 24, 52))
-    draw.text((32, 12), 'Smart HVAC',
-              font=_f(24, True), fill=(255,255,255))
-    draw.text((32, 46), '사용 공간을 선택하면 최적화된 제어 파라미터가 자동 적용됩니다.',
-              font=_f(14), fill=(140, 150, 200))
+    draw.rectangle([(0, 0), (W, 80)], fill=BG_HDR)
+    draw.line([(0, 80), (W, 80)], fill=HDR_LINE, width=1)
+    _rrect(draw, 32, 18, 44, 30, 6, C_ACCENT)
+    draw.text((54, 10), 'Smart HVAC', font=_f(25, True), fill=C_TITLE)
+    draw.text((54, 46), '사용 공간을 선택하면 최적화된 제어 파라미터가 자동 적용됩니다.',
+              font=_f(14), fill=C_SUB)
 
     keys = list(PROFILES.keys())
     n    = len(keys)
@@ -543,8 +571,9 @@ def _select_profile() -> EnvProfile:
             selected[0] = hk
 
     WIN = 'Smart HVAC - 환경 설정'
-    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
     cv2.resizeWindow(WIN, W, H)
+    _center_window(WIN, W, H)
     for _ in range(5):
         cv2.waitKey(1)
     cv2.setMouseCallback(WIN, on_mouse)
@@ -581,6 +610,7 @@ def _select_initial_conditions() -> tuple:
     WIN = 'Smart HVAC - 초기 환경 조건'
     cv2.namedWindow(WIN, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(WIN, 640, 300)
+    _center_window(WIN, 640, 460)
 
     # 트랙바 범위: 온도 -20~50°C (오프셋 +20), 습도 10~100%
     TEMP_OFFSET = 20   # 트랙바 0 = -20°C
@@ -595,18 +625,22 @@ def _select_initial_conditions() -> tuple:
         ih = cv2.getTrackbarPos('실내습도  10~100%', WIN) + 10
         ot = cv2.getTrackbarPos('외기온도 -20~50 C', WIN) - TEMP_OFFSET
 
-        canvas = np.zeros((300, 640, 3), dtype=np.uint8)
-        canvas[:] = (20, 20, 35)
+        canvas = np.full((300, 640, 3), (249, 246, 244), dtype=np.uint8)  # BGR 라이트
         cv2.putText(canvas, 'Initial Environment Conditions',
-                    (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (180, 160, 255), 2)
+                    (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 108, 79), 2,
+                    cv2.LINE_AA)
         cv2.putText(canvas, f'Indoor Temp  : {it:+d} C',
-                    (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (80, 200, 255), 2)
+                    (20, 110), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (235, 118, 37), 2,
+                    cv2.LINE_AA)
         cv2.putText(canvas, f'Indoor Humid : {ih} %',
-                    (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (80, 255, 160), 2)
+                    (20, 160), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (74, 163, 22), 2,
+                    cv2.LINE_AA)
         cv2.putText(canvas, f'Outdoor Temp : {ot:+d} C',
-                    (20, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 180, 80), 2)
+                    (20, 210), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (10, 138, 228), 2,
+                    cv2.LINE_AA)
         cv2.putText(canvas, 'Press any key to confirm',
-                    (20, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (120, 120, 120), 1)
+                    (20, 270), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (134, 124, 120), 1,
+                    cv2.LINE_AA)
         cv2.imshow(WIN, canvas)
 
         k = cv2.waitKey(100) & 0xFF
