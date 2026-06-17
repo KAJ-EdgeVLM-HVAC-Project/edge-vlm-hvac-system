@@ -430,6 +430,7 @@ def main(analysis_interval: int = 30):
         if cap is None:
             cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
     elif _is_jetson():
+        # 1) CSI 카메라 (nvarguscamerasrc) 우선 시도
         gst = (
             "nvarguscamerasrc sensor-id=0 ! "
             "video/x-raw(memory:NVMM),width=640,height=480,framerate=30/1 ! "
@@ -439,8 +440,16 @@ def main(analysis_interval: int = 30):
             "appsink drop=1"
         )
         cap = cv2.VideoCapture(gst, cv2.CAP_GSTREAMER)
+        # 2) CSI 미연결 시 USB(v4l2) 카메라로 폴백 (/dev/video0)
+        if not cap.isOpened():
+            print("[카메라] CSI 없음 → USB(v4l2) 카메라로 폴백")
+            cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     else:
         cap = cv2.VideoCapture(0)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     if not cap.isOpened():
         print("카메라를 열 수 없습니다. 시뮬레이션 모드로 전환합니다.")
         use_camera = False
@@ -574,6 +583,10 @@ def main(analysis_interval: int = 30):
                 print("카메라 프레임을 읽을 수 없습니다. 시뮬레이션으로 전환합니다.")
                 use_camera = False
                 frame = dummy_frame.copy()
+            # 일부 USB 카메라는 해상도 설정을 무시하고 고해상도(예: 8MP)로 캡처 →
+            # 루프 부하를 줄이기 위해 캡처 즉시 640×480으로 축소 (카메라 무관 보장)
+            elif frame.shape[1] > 960:
+                frame = cv2.resize(frame, (640, 480))
         else:
             frame = dummy_frame.copy()
 
