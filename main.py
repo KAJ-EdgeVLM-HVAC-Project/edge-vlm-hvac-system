@@ -279,6 +279,7 @@ def process_vlm_result(vlm_data, people_count, count_source,
         "activity":      vlm_data["activity"],
         "met":           effective_met,
         "clo":           vlm_data["clo"],
+        "clothing":      vlm_data.get("clothing", "-"),
         "room_size":     vlm_data["room_size"],
         "room_size_m2":  vlm_data["room_size_m2"],
         "outerwear":     vlm_data["outerwear"],
@@ -476,6 +477,7 @@ def main(analysis_interval: int = 30):
         "people_count": 0,      "count_source": "yolo",
         "activity":     "-",
         "met":          1.0,    "clo":          1.0,
+        "clothing":     "-",
         "room_size":    "medium", "room_size_m2": ROOM_SIZE_M2,
         "outerwear":    "no",   "heat_source":  "no",
         "motion_score": 0.0,    "met_source":   "vlm",
@@ -1053,7 +1055,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                 print(f"  [{vlm_step}] {video_time:.0f}s ({pct:.0f}%)  "
                       f"인원:0  VLM 스킵 (사람 없음)", flush=True)
                 last_vlm_data = {
-                    "sleeves": "-", "clo": 1.0, "met": 1.0,
+                    "clothing": "-", "sleeves": "-", "clo": 1.0, "met": 1.0,
                     "room_size": "medium", "room_size_m2": ROOM_SIZE_M2,
                     "heat_source": "no", "outerwear": "no", "activity": "-",
                 }

@@ -14,6 +14,15 @@ from PIL import Image, ImageDraw, ImageFont
 
 from state_machine import SystemState
 
+# 옷차림 5단계 → 한국어 라벨
+CLOTHING_KR = {
+    'sleeveless':   '민소매',
+    'short_sleeve': '반팔',
+    'long_sleeve':  '긴팔',
+    'sweater':      '긴팔+스웨터',
+    'jacket':       '아우터',
+}
+
 # ── 패널 크기 ─────────────────────────────────────────────────────────────────
 PANEL_W = 680
 PAD     = 14          # 패널 좌우 여백
@@ -323,16 +332,15 @@ def _draw_occupancy(draw, y: int, ds: dict) -> int:
     clo       = ds.get('clo', 1.0)
     room_sz   = ds.get('room_size', 'medium')
     room_m2   = ds.get('room_size_m2', 30.0)
-    outerwear = ds.get('outerwear', 'no')
+    clothing  = ds.get('clothing', '-')
     heat_src  = ds.get('heat_source', 'no')
     cy = _row2(draw, cy,
-               'CLO',    f'{clo:.2f} clo',              C_TXT,
-               '방 크기', f'{room_sz} ({room_m2:.0f}㎡)', C_TXT)
-    ow_col = C_ORANGE if outerwear == 'yes' else C_LABEL
-    hs_col = C_RED    if heat_src  == 'yes' else C_LABEL
+               '옷차림', f'{CLOTHING_KR.get(clothing, clothing)}', C_TXT,
+               'CLO',   f'{clo:.2f} clo',                         C_TXT)
+    hs_col = C_RED if heat_src == 'yes' else C_LABEL
     cy = _row2(draw, cy,
-               '아우터', '착용' if outerwear == 'yes' else '없음', ow_col,
-               '열원',   '감지' if heat_src  == 'yes' else '없음', hs_col)
+               '방 크기', f'{room_sz} ({room_m2:.0f}㎡)', C_TXT,
+               '열원',   '감지' if heat_src == 'yes' else '없음', hs_col)
     return y + h + GAP
 
 
@@ -367,10 +375,10 @@ def _draw_vlm_context(draw, y: int, vlm_data: dict | None,
 
     # 파싱 결과 (2열)
     fields = [
-        ('activity',    vlm_data.get('activity', '-')),
+        ('clothing',    vlm_data.get('clothing', '-')),
         ('clo',         f"{vlm_data.get('clo', 0):.2f} clo"),
+        ('activity',    vlm_data.get('activity', '-')),
         ('met',         f"{vlm_data.get('met', 0):.1f} met"),
-        ('outerwear',   vlm_data.get('outerwear', '-')),
         ('room_size',   vlm_data.get('room_size', '-')),
         ('heat_source', vlm_data.get('heat_source', '-')),
     ]

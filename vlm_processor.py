@@ -59,20 +59,37 @@ class VLMProcessor:
     LCPP_SERVER_BOOT_SEC = 180  # 서버 기동(모델 로드) 대기 한도
 
     # llama-server json_schema 강제용 출력 스키마
+    # clothing: 옷차림을 5단계로 분류 — 소매/아우터를 따로 묻는 대신
+    # 사람 전체를 보고 한 번에 판단하게 해 작은 VLM에서도 안정적.
     JSON_SCHEMA = {
         "type": "object",
         "properties": {
-            "sleeves":     {"type": "string", "enum": ["long", "short"]},
-            "outerwear":   {"type": "string", "enum": ["yes", "no"]},
+            "clothing":    {"type": "string", "enum": ["sleeveless", "short_sleeve",
+                                                       "long_sleeve", "sweater", "jacket"]},
             "activity":    {"type": "string", "enum": ["lying", "sitting", "standing",
                                                        "walking", "cooking", "exercising"]},
             "room_size":   {"type": "string", "enum": ["small", "medium", "large"]},
             "heat_source": {"type": "string", "enum": ["yes", "no"]},
         },
-        "required": ["sleeves", "outerwear", "activity", "room_size", "heat_source"],
+        "required": ["clothing", "activity", "room_size", "heat_source"],
     }
 
-    # PMV 입력 매핑 테이블 (ISO 7730:2005 근거)
+    # 옷차림 5단계 → CLO (ISO 7730:2005 표 기반)
+    #   sleeveless   : 민소매/탱크탑/반바지        0.35
+    #   short_sleeve : 반팔 셔츠/티셔츠            0.5
+    #   long_sleeve  : 긴팔 셔츠/블라우스          0.7
+    #   sweater      : 긴팔 + 스웨터/후드/가디건    1.0
+    #   jacket       : 재킷/코트/패딩 등 아우터     1.3
+    CLO_BY_CLOTHING = {
+        'sleeveless':   0.35,
+        'short_sleeve': 0.5,
+        'long_sleeve':  0.7,
+        'sweater':      1.0,
+        'jacket':       1.3,
+    }
+    CLO_DEFAULT = 0.7   # 분류 불가 시 긴팔 셔츠 수준
+
+    # 구버전 sleeves(long/short) 호환 — 로그/하위호환용
     CLO_BASE  = {'short': 0.5, 'long': 1.0}
     CLO_OUTER = 0.3   # 아우터 착용 시 추가 착의량
 
@@ -305,9 +322,13 @@ class VLMProcessor:
         b64 = base64.b64encode(jpg.tobytes()).decode()
 
         prompt = (
-            "Look at the image and classify:\n"
-            "sleeves: long or short\n"
-            "outerwear: yes or no\n"
+            "Look at the person in the image and classify what they are wearing.\n"
+            "clothing: choose ONE that best matches the upper body:\n"
+            "  sleeveless = tank top, sleeveless shirt, bare arms\n"
+            "  short_sleeve = t-shirt or short-sleeve shirt\n"
+            "  long_sleeve = long-sleeve shirt or blouse, no extra layer\n"
+            "  sweater = long sleeves plus a sweater, hoodie or cardigan\n"
+            "  jacket = wearing a jacket, coat or padded outerwear\n"
             "activity: lying, sitting, standing, walking, cooking, exercising\n"
             "room_size: small, medium, large\n"
             "heat_source: yes or no (stove, heater, oven, open flame)\n"
@@ -375,9 +396,13 @@ class VLMProcessor:
 
         prompt_text = (
             "Fill in the JSON below. Output ONLY the JSON, no other text.\n"
-            '{"sleeves":"___","outerwear":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
-            "sleeves: long or short\n"
-            "outerwear: yes or no\n"
+            '{"clothing":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
+            "clothing: look at the upper body and pick ONE:\n"
+            "  sleeveless = tank top / bare arms\n"
+            "  short_sleeve = t-shirt / short-sleeve shirt\n"
+            "  long_sleeve = long-sleeve shirt, no extra layer\n"
+            "  sweater = long sleeves + sweater/hoodie/cardigan\n"
+            "  jacket = jacket / coat / padded outerwear\n"
             "activity: lying, sitting, standing, walking, cooking, exercising\n"
             "room_size: small, medium, large\n"
             "heat_source: yes or no"
@@ -394,7 +419,7 @@ class VLMProcessor:
         ]
 
         text            = self.processor.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        text           += '{"sleeves":"'  # prefix forcing: 첫 키까지 고정해 JSON 구조 이탈 방지
+        text           += '{"clothing":"'  # prefix forcing: 첫 키까지 고정해 JSON 구조 이탈 방지
         image_inputs, _ = process_vision_info(messages)
         inputs          = self.processor(
             text=[text], images=image_inputs, padding=True, return_tensors="pt"
@@ -420,21 +445,20 @@ class VLMProcessor:
         input_len    = inputs["input_ids"].shape[1]
         new_tokens   = generated_ids[:, input_len:]
         output_text  = self.processor.batch_decode(new_tokens, skip_special_tokens=True)
-        raw_response = '{"sleeves":"' + output_text[0].strip()
+        raw_response = '{"clothing":"' + output_text[0].strip()
 
         return self._parse_response(raw_response)
 
     def _analyze_frame_lcpp(self, frame):
         """llama.cpp CUDA INT4로 프레임 분석 (Jetson GPU 전용)."""
-        # 프롬프트를 {"sleeves":" 로 끝내 llama.cpp가 JSON을 이어서 생성하도록 강제
+        # 프롬프트를 {"clothing":" 로 끝내 llama.cpp가 JSON을 이어서 생성하도록 강제
         prompt = (
             "Fill in the JSON. Output ONLY the JSON, no other text.\n"
-            "sleeves: long or short\n"
-            "outerwear: yes or no\n"
+            "clothing: sleeveless, short_sleeve, long_sleeve, sweater, jacket\n"
             "activity: lying, sitting, standing, walking, cooking, exercising\n"
             "room_size: small, medium, large\n"
             "heat_source: yes or no\n"
-            '{"sleeves":"'
+            '{"clothing":"'
         )
 
         tmp_img = None
@@ -480,7 +504,7 @@ class VLMProcessor:
                         'warning:', 'llama_', 'clip_', 'encode_',
                         'main:', 'Log ',
                         # echo된 프롬프트 라인 제거
-                        'Fill in', 'sleeves:', 'outerwear:', 'activity:',
+                        'Fill in', 'clothing:', 'activity:',
                         'room_size:', 'heat_source:', 'Output ONLY',
                     )):
                         continue
@@ -501,7 +525,7 @@ class VLMProcessor:
                 raw = _clean(result.stderr)
 
             # 프롬프트 prefix와 함께 완전한 JSON 복원
-            raw = '{"sleeves":"' + raw
+            raw = '{"clothing":"' + raw
             print(f"[VLM OUTPUT]\n{raw}\n", flush=True)
             return self._parse_response(raw)
 
@@ -519,8 +543,9 @@ class VLMProcessor:
         """모델 거절/파싱 실패 시 반환할 기본값"""
         return {
             "raw_response": raw,
+            "clothing":     "long_sleeve",
             "sleeves":      "long",
-            "clo":          1.0,
+            "clo":          self.CLO_DEFAULT,
             "met":          self.MET_DEFAULT,
             "room_size":    "medium",
             "room_size_m2": 30.0,
@@ -540,18 +565,20 @@ class VLMProcessor:
             for m in re.finditer(r'\{[^{}]+\}', raw_response):
                 try:
                     candidate = json.loads(m.group())
-                    if any(k in candidate for k in ('sleeves', 'activity', 'outerwear')):
+                    if any(k in candidate for k in ('clothing', 'sleeves', 'activity')):
                         data = candidate  # 마지막으로 유효한 것을 덮어씀
                 except json.JSONDecodeError:
                     continue
             if data is None:
                 # JSON 없으면 regex로 enum값 직접 추출 시도
                 data = {}
-                sm = re.search(r'"sleeves"\s*:\s*"(long|short)"', raw_response)
+                cm = re.search(r'"clothing"\s*:\s*"(sleeveless|short_sleeve|long_sleeve|sweater|jacket)"', raw_response)
+                sm = re.search(r'"sleeves"\s*:\s*"(long|short)"', raw_response)   # 구버전 호환
                 am = re.search(r'"activity"\s*:\s*"(sitting|standing|walking|lying|cooking|exercising)"', raw_response)
-                om = re.search(r'"outerwear"\s*:\s*"(yes|no)"', raw_response)
+                om = re.search(r'"outerwear"\s*:\s*"(yes|no)"', raw_response)     # 구버전 호환
                 rm = re.search(r'"room_size"\s*:\s*"(small|medium|large)"', raw_response)
                 hm = re.search(r'"heat_source"\s*:\s*"(yes|no)"', raw_response)
+                if cm: data['clothing']    = cm.group(1)
                 if sm: data['sleeves']     = sm.group(1)
                 if am: data['activity']    = am.group(1)
                 if om: data['outerwear']   = om.group(1)
@@ -564,9 +591,22 @@ class VLMProcessor:
                 else:
                     print(f"[VLM] regex 파싱 성공: {data}")
 
-            clo = self.CLO_BASE.get(data.get('sleeves', 'long'), 1.0)
-            if data.get('outerwear') == 'yes':
-                clo += self.CLO_OUTER
+            # ── 착의량(clo) 결정 ──────────────────────────────────────────────
+            # 우선순위: clothing(신규 5단계) > sleeves+outerwear(구버전 호환)
+            clothing = data.get('clothing')
+            if clothing in self.CLO_BY_CLOTHING:
+                clo       = self.CLO_BY_CLOTHING[clothing]
+                outerwear = 'yes' if clothing == 'jacket' else 'no'
+                sleeves   = 'short' if clothing in ('sleeveless', 'short_sleeve') else 'long'
+            else:
+                # 구버전 sleeves/outerwear 응답 호환
+                sleeves   = data.get('sleeves', 'long')
+                outerwear = data.get('outerwear', 'no')
+                clo       = self.CLO_BASE.get(sleeves, 1.0)
+                if outerwear == 'yes':
+                    clo += self.CLO_OUTER
+                clothing  = ('jacket'  if outerwear == 'yes' else
+                             'short_sleeve' if sleeves == 'short' else 'long_sleeve')
 
             activity     = data.get('activity', 'standing')
             met          = self.MET_MAP.get(activity, self.MET_DEFAULT)
@@ -575,13 +615,14 @@ class VLMProcessor:
 
             return {
                 "raw_response": raw_response,
-                "sleeves":      data.get('sleeves', 'long'),
+                "clothing":     clothing,
+                "sleeves":      sleeves,
                 "clo":          round(clo, 2),
                 "met":          met,
                 "room_size":    room_size,
                 "room_size_m2": room_size_m2,
                 "heat_source":  data.get('heat_source', 'no'),
-                "outerwear":    data.get('outerwear', 'no'),
+                "outerwear":    outerwear,
                 "activity":     activity,
             }
 
@@ -594,17 +635,17 @@ class VLMProcessor:
         t = text.lower()
         data = {}
 
-        # sleeves
-        if any(w in t for w in ['short sleeve', 't-shirt', 'tshirt', 'tank top', 'short-sleeve']):
-            data['sleeves'] = 'short'
+        # clothing — 가장 두꺼운 단서부터 우선 매칭
+        if any(w in t for w in ['jacket', 'coat', 'overcoat', 'blazer', 'parka', 'padded', 'puffer', 'down jacket']):
+            data['clothing'] = 'jacket'
+        elif any(w in t for w in ['sweater', 'hoodie', 'cardigan', 'sweatshirt', 'jumper', 'pullover']):
+            data['clothing'] = 'sweater'
+        elif any(w in t for w in ['tank top', 'sleeveless', 'bare arm', 'tank-top', 'singlet']):
+            data['clothing'] = 'sleeveless'
+        elif any(w in t for w in ['short sleeve', 't-shirt', 'tshirt', 'short-sleeve', 'tee']):
+            data['clothing'] = 'short_sleeve'
         else:
-            data['sleeves'] = 'long'
-
-        # outerwear
-        if any(w in t for w in ['jacket', 'coat', 'hoodie', 'overcoat', 'blazer', 'cardigan']):
-            data['outerwear'] = 'yes'
-        else:
-            data['outerwear'] = 'no'
+            data['clothing'] = 'long_sleeve'
 
         # activity
         if any(w in t for w in ['lying', 'lying down', 'sleeping']):
