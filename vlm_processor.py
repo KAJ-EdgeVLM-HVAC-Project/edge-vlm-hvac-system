@@ -58,6 +58,13 @@ class VLMProcessor:
     LCPP_PORT   = 8090    # llama-server 포트 (127.0.0.1 전용)
     LCPP_SERVER_BOOT_SEC = 180  # 서버 기동(모델 로드) 대기 한도
 
+    # Qwen2-VL 비전 토큰 상한 — 고해상도 카메라 입력의 MPS OOM 방지.
+    # 1 토큰 = 28×28 픽셀. max 약 360 토큰(≈530×530)으로 제한.
+    VLM_MIN_PIXELS = 256 * 28 * 28   # ≈ 200K px (하한)
+    VLM_MAX_PIXELS = 360 * 28 * 28   # ≈ 282K px (상한, OOM 방지)
+    VLM_INPUT_MAX_W = 640            # 추론 전 프레임 리사이즈 상한 (가로)
+    VLM_INPUT_MAX_H = 480            # 추론 전 프레임 리사이즈 상한 (세로)
+
     # llama-server json_schema 강제용 출력 스키마
     # clothing: 옷차림을 5단계로 분류 — 소매/아우터를 따로 묻는 대신
     # 사람 전체를 보고 한 번에 판단하게 해 작은 VLM에서도 안정적.
@@ -217,11 +224,15 @@ class VLMProcessor:
                     attn_implementation="eager",
                     local_files_only=True,
                 ).to(self.device)
+                # max_pixels 캡: 고해상도 카메라 입력이 비전 토큰을 폭증시켜
+                # MPS OOM을 유발하는 것을 방지 (Qwen2-VL 동적 해상도 상한)
                 self.processor = AutoProcessor.from_pretrained(
-                    self.model_id, local_files_only=True
+                    self.model_id, local_files_only=True,
+                    min_pixels=self.VLM_MIN_PIXELS, max_pixels=self.VLM_MAX_PIXELS,
                 )
                 print(f"✅ [VLM] {self.model_id} 로드 완료 "
-                      f"(device={self.device}, dtype={self.dtype})")
+                      f"(device={self.device}, dtype={self.dtype}, "
+                      f"max_pixels={self.VLM_MAX_PIXELS})")
             else:
                 # CUDA / CPU: device_map으로 직접 배치
                 self.model = Qwen2VLForConditionalGeneration.from_pretrained(
@@ -232,10 +243,12 @@ class VLMProcessor:
                     local_files_only=True,
                 )
                 self.processor = AutoProcessor.from_pretrained(
-                    self.model_id, local_files_only=True
+                    self.model_id, local_files_only=True,
+                    min_pixels=self.VLM_MIN_PIXELS, max_pixels=self.VLM_MAX_PIXELS,
                 )
                 print(f"✅ [VLM] {self.model_id} 로드 완료 "
-                      f"(device={self.device}, dtype={self.dtype})")
+                      f"(device={self.device}, dtype={self.dtype}, "
+                      f"max_pixels={self.VLM_MAX_PIXELS})")
         except Exception as e:
             print(f"❌ [VLM] 모델 로드 실패: {e}")
             self.model     = None
@@ -390,8 +403,13 @@ class VLMProcessor:
             print("⚠️ [VLM] 모델이 로드되지 않아 분석 불가.")
             return None
 
-        # 원본 해상도 그대로 사용 (640×480). Qwen2-VL은 가변 해상도 입력 지원.
-        # 320×320 다운스케일은 4:3 비율을 정방형으로 왜곡하고 원거리 피사체 픽셀을 손실시킴.
+        # 고해상도 카메라(예: 맥북 1080p) 입력은 비전 토큰을 폭증시켜 MPS OOM을
+        # 유발하므로 추론 전 640×480 이내로 축소 (비율 유지). 프로세서의
+        # max_pixels와 함께 토큰 수를 이중으로 제한.
+        h, w = frame.shape[:2]
+        if w > self.VLM_INPUT_MAX_W or h > self.VLM_INPUT_MAX_H:
+            scale = min(self.VLM_INPUT_MAX_W / w, self.VLM_INPUT_MAX_H / h)
+            frame = cv2.resize(frame, (int(w * scale), int(h * scale)))
         pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
         prompt_text = (
@@ -430,24 +448,35 @@ class VLMProcessor:
             inputs["pixel_values"] = inputs["pixel_values"].to(self.dtype)
         inputs = inputs.to(self.device)
 
-        with torch.inference_mode():
-            generated_ids = self.model.generate(
-                **inputs,
-                max_new_tokens=60,
-                do_sample=True,
-                temperature=0.3,
-                top_p=0.9,
-                repetition_penalty=1.3,
-            )
+        try:
+            with torch.inference_mode():
+                generated_ids = self.model.generate(
+                    **inputs,
+                    max_new_tokens=40,
+                    do_sample=True,
+                    temperature=0.3,
+                    top_p=0.9,
+                    repetition_penalty=1.3,
+                )
 
-        # 입력 토큰 수 계산 (입력 제외하고 새로 생성된 부분만 디코딩)
-        # prefix forcing으로 추가한 "{" 를 앞에 다시 붙여서 완전한 JSON으로 복원
-        input_len    = inputs["input_ids"].shape[1]
-        new_tokens   = generated_ids[:, input_len:]
-        output_text  = self.processor.batch_decode(new_tokens, skip_special_tokens=True)
-        raw_response = '{"clothing":"' + output_text[0].strip()
-
-        return self._parse_response(raw_response)
+            # 입력 토큰 수 계산 (입력 제외하고 새로 생성된 부분만 디코딩)
+            # prefix forcing으로 추가한 "{" 를 앞에 다시 붙여서 완전한 JSON으로 복원
+            input_len    = inputs["input_ids"].shape[1]
+            new_tokens   = generated_ids[:, input_len:]
+            output_text  = self.processor.batch_decode(new_tokens, skip_special_tokens=True)
+            raw_response = '{"clothing":"' + output_text[0].strip()
+            return self._parse_response(raw_response)
+        except RuntimeError as e:
+            # MPS/CUDA OOM 등 추론 실패 — 스레드를 죽이지 않고 기본값 반환
+            print(f"⚠️ [VLM] 추론 실패({self.device}): {str(e)[:120]}")
+            return self._default_result()
+        finally:
+            # MPS 메모리 누적 방지 (다음 추론을 위한 캐시 해제)
+            if self.device == "mps":
+                try:
+                    torch.mps.empty_cache()
+                except Exception:
+                    pass
 
     def _analyze_frame_lcpp(self, frame):
         """llama.cpp CUDA INT4로 프레임 분석 (Jetson GPU 전용)."""

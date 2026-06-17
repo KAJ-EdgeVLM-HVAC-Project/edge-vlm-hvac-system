@@ -150,6 +150,11 @@ def vlm_worker(vlm, frame_lock, shared_frame_ref,
             analyzing_event.set()
         try:
             result = vlm.analyze_frame(frame_copy)
+        except Exception as e:
+            # 어떤 추론 실패도 워커 스레드를 죽이지 않도록 방어
+            # (스레드가 죽으면 VLM 결과가 영영 안 들어와 clo가 기본값에 고정됨)
+            print(f"⚠️ [VLM-Worker] 분석 예외: {str(e)[:120]} — 건너뜀")
+            result = None
         finally:
             if analyzing_event is not None:
                 analyzing_event.clear()
