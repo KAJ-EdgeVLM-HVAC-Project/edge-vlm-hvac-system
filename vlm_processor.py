@@ -412,15 +412,12 @@ class VLMProcessor:
             frame = cv2.resize(frame, (int(w * scale), int(h * scale)))
         pil_img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
+        # 간결한 프롬프트 — 장황한 설명은 작은 모델이 그대로 echo해 JSON을 깨뜨림.
+        # enum 값만 나열하고 prefix forcing으로 구조를 강제한다.
         prompt_text = (
             "Fill in the JSON below. Output ONLY the JSON, no other text.\n"
             '{"clothing":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
-            "clothing: look at the upper body and pick ONE:\n"
-            "  sleeveless = tank top / bare arms\n"
-            "  short_sleeve = t-shirt / short-sleeve shirt\n"
-            "  long_sleeve = long-sleeve shirt, no extra layer\n"
-            "  sweater = long sleeves + sweater/hoodie/cardigan\n"
-            "  jacket = jacket / coat / padded outerwear\n"
+            "clothing: sleeveless, short_sleeve, long_sleeve, sweater, jacket\n"
             "activity: lying, sitting, standing, walking, cooking, exercising\n"
             "room_size: small, medium, large\n"
             "heat_source: yes or no"
@@ -454,9 +451,9 @@ class VLMProcessor:
                     **inputs,
                     max_new_tokens=40,
                     do_sample=True,
-                    temperature=0.3,
+                    temperature=0.2,
                     top_p=0.9,
-                    repetition_penalty=1.3,
+                    repetition_penalty=1.1,   # 1.3은 JSON 구조 토큰(",":) 반복을 억제해 깨짐
                 )
 
             # 입력 토큰 수 계산 (입력 제외하고 새로 생성된 부분만 디코딩)
