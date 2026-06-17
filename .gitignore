@@ -217,3 +217,8 @@ hvac_system_performance.csv
 
 # Claude Code settings
 .claude/settings.json
+
+# PPT 빌드 작업물
+ppt_build/
+~$*.pptx
+VLM_HVAC_Capstone.pptx
