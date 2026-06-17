@@ -62,8 +62,11 @@ class VLMProcessor:
     # 1 토큰 = 28×28 픽셀. max 약 360 토큰(≈530×530)으로 제한.
     VLM_MIN_PIXELS = 256 * 28 * 28   # ≈ 200K px (하한)
     VLM_MAX_PIXELS = 360 * 28 * 28   # ≈ 282K px (상한, OOM 방지)
-    VLM_INPUT_MAX_W = 640            # 추론 전 프레임 리사이즈 상한 (가로)
-    VLM_INPUT_MAX_H = 480            # 추론 전 프레임 리사이즈 상한 (세로)
+    VLM_INPUT_MAX_W = 640            # MPS(맥) 경로 리사이즈 상한 가로 (OOM 방지로 보수적)
+    VLM_INPUT_MAX_H = 480            # MPS(맥) 경로 리사이즈 상한 세로
+    # 보드(lcpp) 경로 입력 가로 상한 — GPU가 빨라 더 키워도 됨 (옷차림 디테일↑).
+    # 비율 유지하며 이 가로폭 이내로 축소 (예: 1280×720 → 1024×576)
+    LCPP_INPUT_MAX_W = 1024
 
     # llama-server json_schema 강제용 출력 스키마
     # clothing: 옷차림을 5단계로 분류 — 소매/아우터를 따로 묻는 대신
@@ -327,8 +330,9 @@ class VLMProcessor:
     def _analyze_frame_lcpp_server(self, frame):
         """llama-server HTTP API로 프레임 분석 (json_schema 강제)."""
         h, w = frame.shape[:2]
-        if w > 640 or h > 480:
-            frame = cv2.resize(frame, (640, 480))
+        if w > self.LCPP_INPUT_MAX_W:
+            frame = cv2.resize(frame, (self.LCPP_INPUT_MAX_W,
+                                       int(h * self.LCPP_INPUT_MAX_W / w)))
         ok, jpg = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
         if not ok:
             return self._default_result()
@@ -492,10 +496,11 @@ class VLMProcessor:
             # 프레임을 임시 JPEG 파일로 저장 (llama.cpp CLI 입력)
             with tempfile.NamedTemporaryFile(suffix=".jpg", delete=False) as f:
                 tmp_img = f.name
-            # VLM 입력 이미지는 640x480으로 축소 (추론 속도 개선)
+            # VLM 입력 이미지는 LCPP_INPUT_MAX_W 이내로 축소 (비율 유지)
             h, w = frame.shape[:2]
-            if w > 640 or h > 480:
-                frame = cv2.resize(frame, (640, 480))
+            if w > self.LCPP_INPUT_MAX_W:
+                frame = cv2.resize(frame, (self.LCPP_INPUT_MAX_W,
+                                           int(h * self.LCPP_INPUT_MAX_W / w)))
             cv2.imwrite(tmp_img, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
 
             cmd = [

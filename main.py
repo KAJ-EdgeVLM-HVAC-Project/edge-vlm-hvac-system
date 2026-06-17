@@ -393,7 +393,7 @@ def main(analysis_interval: int = 30):
         departure_enabled  = env_profile.departure_enabled,
     )
     motion_det  = MotionDetector(history_len=10, blur_ksize=21)
-    yolo        = YOLODetector(imgsz=640 if _is_jetson() else 320, conf=0.15)
+    yolo        = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.15)
     pid         = PIDController(kp=0.8, ki=0.05, kd=0.3)
     sensor      = SensorInterface(simulator=hvac)
 
@@ -430,10 +430,10 @@ def main(analysis_interval: int = 30):
         if cap is None:
             cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
     elif _is_jetson():
-        # 1) CSI 카메라 (nvarguscamerasrc) 우선 시도
+        # 1) CSI 카메라 (nvarguscamerasrc) 우선 시도 — 720p 센서 모드로 캡처
         gst = (
             "nvarguscamerasrc sensor-id=0 ! "
-            "video/x-raw(memory:NVMM),width=640,height=480,framerate=30/1 ! "
+            "video/x-raw(memory:NVMM),width=1280,height=720,framerate=30/1 ! "
             "nvvidconv flip-method=2 ! "
             "video/x-raw,format=BGRx ! "
             "videoconvert ! video/x-raw,format=BGR ! "
@@ -583,10 +583,10 @@ def main(analysis_interval: int = 30):
                 print("카메라 프레임을 읽을 수 없습니다. 시뮬레이션으로 전환합니다.")
                 use_camera = False
                 frame = dummy_frame.copy()
-            # 일부 USB 카메라는 해상도 설정을 무시하고 고해상도(예: 8MP)로 캡처 →
-            # 루프 부하를 줄이기 위해 캡처 즉시 640×480으로 축소 (카메라 무관 보장)
-            elif frame.shape[1] > 960:
-                frame = cv2.resize(frame, (640, 480))
+            # 일부 USB 카메라는 해상도 설정을 무시하고 초고해상도(예: 8MP)로 캡처 →
+            # 1280 초과 시만 1280×720으로 축소 (720p CSI 캡처는 그대로 통과)
+            elif frame.shape[1] > 1280:
+                frame = cv2.resize(frame, (1280, 720))
         else:
             frame = dummy_frame.copy()
 
@@ -950,7 +950,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
     engine = ThermalEngine()
     pid_ai = PIDController(kp=0.8, ki=0.05, kd=0.3)
     pid_rb = PIDController(kp=0.8, ki=0.05, kd=0.3)
-    yolo   = YOLODetector(imgsz=640 if _is_jetson() else 320, conf=0.15)
+    yolo   = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.15)
     hvac_ai = HVACSimulator(room_size=ROOM_SIZE_M2)
     hvac_rb = HVACSimulator(room_size=ROOM_SIZE_M2)  # 룰베이스 전용 시뮬레이터
     energy_ai_wh = 0.0
