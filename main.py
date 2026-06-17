@@ -27,7 +27,9 @@ from yolo_detector import YOLODetector
 from pid_controller import PIDController
 from sensor_interface import SensorInterface
 from control_logic import decide_control
-from energy_monitor import EnergyMonitor, POWER_W, RB_SETPOINT, RB_FAN, rb_watts
+# energy_monitor: video_mode의 룰베이스 비교 베이스라인 상수/함수만 사용
+# (카메라 라이브 모드에는 절감률 표시 안 함 — 영상 분석 모드 전용 지표)
+from energy_monitor import POWER_W, RB_SETPOINT, RB_FAN, rb_watts
 from env_profiles import PROFILES, EnvProfile
 from startup_screen import show_and_select, StartupResult, \
     screen_size as startup_screen_size
@@ -96,7 +98,6 @@ CSV_COLUMNS = [
     "heat_source", "motion_score", "met_source",
     "hvac_mode", "room_size",
     "pmv_val", "comfort_status", "target_temp", "fan_speed",
-    "ai_energy_wh", "rb_energy_wh", "savings_pct", "comfort_rate",
 ]
 
 
@@ -219,7 +220,7 @@ def _predict_occupancy(log_file: str) -> dict:
 
 def process_vlm_result(vlm_data, people_count, count_source,
                        motion_det, hvac, sm, engine, pid,
-                       sensor, display_state, energy,
+                       sensor, display_state,
                        out_temp, out_humid, out_weather, out_wind,
                        pmv_preference: float = 0.0):
     """
@@ -250,7 +251,6 @@ def process_vlm_result(vlm_data, people_count, count_source,
     sm.update(people_count, vlm_data["outerwear"], vlm_data["activity"])
 
     hvac.set_room(vlm_data["room_size_m2"], False)
-    energy.sync_room(vlm_data["room_size_m2"])
 
     # ── 제어 결정 (사용자 선호 + 시스템 상태 반영) ───────────────────────────
     # adjusted_pmv: 사용자가 따뜻함 선호(+) → 시스템이 더 춥다고 인식 → 난방 강화
@@ -308,10 +308,6 @@ def process_vlm_result(vlm_data, people_count, count_source,
         "comfort_status": comfort_msg,
         "target_temp":  target_temp,
         "fan_speed":    fan_speed,
-        "ai_energy_wh": round(energy.ai_wh, 2),
-        "rb_energy_wh": round(energy.rb_wh, 2),
-        "savings_pct":  round(energy.savings_pct, 1),
-        "comfort_rate": round(energy.comfort_rate, 1),
     }
 
 
@@ -381,9 +377,6 @@ def main(analysis_interval: int = 30):
     weather     = WeatherService(lat=WEATHER_LAT, lon=WEATHER_LON)
     hvac        = HVACSimulator(room_size=ROOM_SIZE_M2)
     hvac.set_room(ROOM_SIZE_M2, False)
-    energy      = EnergyMonitor(room_size=ROOM_SIZE_M2,
-                                init_temp=hvac.indoor_temp,
-                                init_humid=hvac.indoor_humid)
     engine      = ThermalEngine()
     sm          = StateManager(
         work_start_hour    = env_profile.work_start,
@@ -487,7 +480,6 @@ def main(analysis_interval: int = 30):
         "outerwear":    "no",   "heat_source":  "no",
         "motion_score": 0.0,    "met_source":   "vlm",
         "last_analysis": "--:--:--",
-        "ai_wh": 0.0, "rb_wh": 0.0, "savings_pct": 0.0, "comfort_rate": 0.0,
     }
 
     last_people_count  = 0
@@ -654,9 +646,6 @@ def main(analysis_interval: int = 30):
             else:
                 sm.update(last_people_count)
 
-            # 쾌적율 누적 (재실 중만)
-            energy.update_comfort(pmv_now, occupied=last_people_count > 0)
-
             # 사용자 선호 + 시스템 상태 반영: adjusted_pmv로 제어
             adjusted_pmv = pmv_now - pref_state['value']
             power, tgt, fan, mode = decide_control(
@@ -690,14 +679,6 @@ def main(analysis_interval: int = 30):
             hvac.indoor_temp  = env_override["indoor_temp"]
             hvac.indoor_humid = env_override["indoor_humid"]
 
-        # ── 에너지 적산 (AI 실측 + 룰베이스 병렬 시뮬) ───────────────────────
-        energy.step(1/30, eff_out_temp, eff_out_humid,
-                    last_people_count, hvac)
-        display_state["ai_wh"]        = energy.ai_wh
-        display_state["rb_wh"]        = energy.rb_wh
-        display_state["savings_pct"]  = energy.savings_pct
-        display_state["comfort_rate"] = energy.comfort_rate
-
         # ── VLM 결과 처리 ─────────────────────────────────────────────────────
         try:
             vlm_data = result_queue.get_nowait()
@@ -710,7 +691,7 @@ def main(analysis_interval: int = 30):
             log_row = process_vlm_result(
                 vlm_data, last_people_count, last_count_source,
                 motion_det, hvac, sm, engine, pid,
-                sensor, display_state, energy,
+                sensor, display_state,
                 out_temp, out_humid, out_weather, out_wind,
                 pmv_preference=pref_state['value'],
             )

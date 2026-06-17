@@ -263,25 +263,6 @@ def _draw_indoor(draw, y: int, hvac, ds: dict) -> int:
     return y + h + GAP
 
 
-def _draw_energy(draw, y: int, ds: dict) -> int:
-    """AI 제어 vs 룰베이스 에너지 비교"""
-    h = 34 + ROW_H * 2 + 8
-    _card(draw, y, h)
-    cy = _card_title(draw, y, '에너지', right_text='AI vs 룰베이스')
-    ai_wh   = ds.get('ai_wh', 0.0)
-    rb_wh   = ds.get('rb_wh', 0.0)
-    sav_pct = ds.get('savings_pct', 0.0)
-    comfort = ds.get('comfort_rate', 0.0)
-    sav_col = C_GREEN if sav_pct > 0 else (C_RED if sav_pct < 0 else C_TXT)
-    cy = _row2(draw, cy,
-               'AI 소비',  f'{ai_wh:.1f} Wh', C_ACCENT,
-               '룰베이스', f'{rb_wh:.1f} Wh', C_ORANGE)
-    cy = _row2(draw, cy,
-               '절감률', f'{sav_pct:+.1f}%', sav_col,
-               '쾌적율', f'{comfort:.0f}%',  C_GREEN if comfort >= 80 else C_TXT)
-    return y + h + GAP
-
-
 def _draw_hvac(draw, y: int, hvac, sm, manual_ctrl: dict = None) -> int:
     is_manual = manual_ctrl is not None and manual_ctrl.get("enabled", False)
     h = 34 + ROW_H * 2 + 8 + (28 if is_manual else 0)
@@ -483,7 +464,6 @@ def build(cam_h: int, hvac, sm,
         y = _draw_env_override(draw, y, env_override, _ENV_VARS, _ENV_LABEL)
     y = _draw_outdoor(draw, y, out_temp, out_humid, out_weather, out_wind)
     y = _draw_indoor(draw, y, hvac, ds)
-    y = _draw_energy(draw, y, ds)
     y = _draw_hvac(draw, y, hvac, sm, manual_ctrl)
     y = _draw_occupancy(draw, y, ds)
 
