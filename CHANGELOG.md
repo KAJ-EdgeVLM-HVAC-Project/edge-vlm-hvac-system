@@ -6,7 +6,7 @@
 
 ## [1.0.0] - 2026-06-19
 
-졸업 캡스톤 최종 릴리스. Jetson Orin Nano Super 실기기 배포·검증 완료.
+현장미러형 프로젝트 최종 릴리스. Jetson Orin Nano Super 실기기 배포·검증 완료.
 
 ### Added (추가)
 - Qwen3-VL-2B INT4 GGUF 지원 및 자동 모델 탐색(`qwen3` 우선 선택)
