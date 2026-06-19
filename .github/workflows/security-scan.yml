@@ -1,0 +1,274 @@
+name: 🔒 Security Scanning
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  schedule:
+    # 매주 월요일 새벽 2시에 자동 스캔
+    - cron: "0 2 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+  checks: write
+  pull-requests: write
+
+jobs:
+  # ========== 1. 의존성 취약점 스캔 (Dependency Check) ==========
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pip-audit safety bandit
+
+      - name: Run pip-audit (Production dependencies)
+        continue-on-error: true
+        run: |
+          echo "🔍 Scanning production dependencies with pip-audit..."
+          if [ -f requirements_jetson.txt ]; then
+            pip-audit --desc --cache-dir /tmp/pip-audit-cache -r requirements_jetson.txt
+          else
+            pip-audit --desc
+          fi
+
+      - name: Run safety check
+        continue-on-error: true
+        run: |
+          echo "🔍 Scanning with safety..."
+          if [ -f requirements_jetson.txt ]; then
+            safety check -r requirements_jetson.txt --json > safety-report.json
+          fi
+
+  # ========== 2. SAST (정적 코드 분석) ==========
+  sast-scan:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install security tools
+        run: |
+          python -m pip install bandit flake8 pylint
+
+      - name: Run Bandit (보안 취약점 검사)
+        continue-on-error: true
+        run: |
+          echo "🔐 Running Bandit security scan..."
+          bandit -r . \
+            --exclude ./tests,./docs,./model \
+            --format json \
+            --output bandit-report.json \
+            || echo "Bandit scan completed with warnings"
+
+      - name: Run Bandit with HTML output
+        continue-on-error: true
+        run: |
+          bandit -r . \
+            --exclude ./tests,./docs,./model \
+            -f html \
+            -o bandit-report.html \
+            || true
+
+      - name: Run flake8 (코드 품질)
+        continue-on-error: true
+        run: |
+          echo "🔍 Running flake8..."
+          flake8 . --max-line-length=120 --exclude=./tests,./docs,./model \
+            --format=json > flake8-report.json \
+            || true
+
+      - name: Upload Bandit report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bandit-security-report
+          path: |
+            bandit-report.json
+            bandit-report.html
+          retention-days: 30
+
+  # ========== 3. 코드 품질 및 복잡도 검사 ==========
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install tools
+        run: |
+          python -m pip install radon pylint
+
+      - name: Check code complexity (Radon)
+        continue-on-error: true
+        run: |
+          echo "📊 Analyzing code complexity..."
+          radon cc . -a -s --exclude ./tests,./docs,./model || true
+          radon mi . --exclude ./tests,./docs,./model || true
+
+  # ========== 4. 보안 설정 검사 ==========
+  security-config:
+    name: Security Configuration Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check .gitignore
+        run: |
+          echo "🔐 Checking .gitignore..."
+          if grep -q "\.env" .gitignore 2>/dev/null; then
+            echo "✅ .env is in .gitignore"
+          else
+            echo "⚠️  .env should be added to .gitignore"
+          fi
+          if grep -q "*.key" .gitignore 2>/dev/null; then
+            echo "✅ *.key is in .gitignore"
+          else
+            echo "⚠️  *.key files should be added to .gitignore"
+          fi
+
+      - name: Check for hardcoded secrets
+        continue-on-error: true
+        run: |
+          echo "🔍 Scanning for potential hardcoded secrets..."
+          if grep -r "password\|api_key\|secret\|token" . \
+            --exclude-dir=.git \
+            --exclude-dir=__pycache__ \
+            --exclude-dir=.pytest_cache \
+            --exclude="*.md" \
+            --exclude="*.txt" \
+            --exclude-dir=.github | grep -v "# " | head -20; then
+            echo "⚠️  Found potential secrets - review above"
+          else
+            echo "✅ No obvious hardcoded secrets found"
+          fi
+
+      - name: Verify API security headers
+        run: |
+          echo "🔐 Checking security configurations..."
+          if grep -r "allow_credentials" dashboard.py 2>/dev/null; then
+            echo "✅ CORS credentials configuration found"
+          else
+            echo "⚠️  Ensure CORS is properly configured"
+          fi
+
+  # ========== 5. 권한 및 파일 권한 검사 ==========
+  permissions-check:
+    name: File Permissions Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check executable permissions
+        run: |
+          echo "🔒 Checking file permissions..."
+          # 실행 파일 권한 확인
+          if [ -f "deploy/hvac.service" ]; then
+            ls -la deploy/hvac.service
+          fi
+          
+          # 설정 파일이 너무 광범위한 권한을 가지지 않았는지 확인
+          if [ -f ".env.example" ]; then
+            PERMS=$(stat -c %a .env.example 2>/dev/null || stat -f %A .env.example)
+            echo "env.example permissions: $PERMS"
+          fi
+
+  # ========== 6. SBOM (Software Bill of Materials) 생성 ==========
+  sbom-generation:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install cyclonedx
+        run: |
+          pip install cyclonedx-bom cyclonedx-python-poetry
+
+      - name: Generate SBOM (CycloneDX)
+        continue-on-error: true
+        run: |
+          echo "📦 Generating Software Bill of Materials..."
+          if [ -f requirements_jetson.txt ]; then
+            cyclonedx-bom --output-format json --output cyclonedx-bom.json
+            cyclonedx-bom --output-format xml --output cyclonedx-bom.xml
+          fi
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sbom-reports
+          path: |
+            cyclonedx-bom.json
+            cyclonedx-bom.xml
+          retention-days: 90
+
+  # ========== 7. 보안 리포트 생성 ==========
+  security-report:
+    name: Generate Security Report
+    runs-on: ubuntu-latest
+    needs: [dependency-scan, sast-scan, code-quality, security-config]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## 🔒 Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ✅ Scans Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- Dependency Vulnerability Scan: ${{ needs.dependency-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- SAST (Static Code Analysis): ${{ needs.sast-scan.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Code Quality Check: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Security Configuration: ${{ needs.security-config.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "1. Review security scan reports in Artifacts" >> $GITHUB_STEP_SUMMARY
+          echo "2. Address any critical findings" >> $GITHUB_STEP_SUMMARY
+          echo "3. Update dependencies if vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: '🔒 Security scanning completed. Check artifacts for detailed reports.'
+            })
