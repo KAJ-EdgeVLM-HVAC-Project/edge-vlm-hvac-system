@@ -1,0 +1,41 @@
+# VLM Edge HVAC System - Universal Requirements
+# 모든 플랫폼 호환 (Mac/Jetson/Linux/CI)
+# 플랫폼별 특화: requirements_mac.txt, requirements_jetson.txt 참고
+
+# Vision Language Model
+transformers>=4.40.0
+qwen-vl-utils
+accelerate>=0.20.0
+
+# Image/Video Processing
+pillow>=9.0.0
+opencv-python>=4.8.0
+
+# Data & Visualization
+pandas>=1.5.0
+numpy>=1.24.0
+matplotlib>=3.7.0
+
+# APIs & Communication
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Object Detection (YOLOv8)
+ultralytics>=8.0.0
+
+# Utilities
+yt-dlp>=2023.10.0  # YouTube 영상 분석 모드
+
+# Testing & Quality (선택)
+pytest>=7.0.0
+flake8>=6.0.0
+pylint>=2.17.0
+
+# CI/CD & Deployment (선택)
+bandit>=1.7.5
+safety>=2.3.0
+
+# Notes:
+# - Jetson: cv2는 시스템 패키지 사용 (위의 opencv-python 제거)
+# - M1/M2 Mac: PyTorch는 별도 설치 (torch, torchvision)
+# - Jetson JetPack 전용 PyTorch wheel 필요 (pip 기본 버전 사용 금지)

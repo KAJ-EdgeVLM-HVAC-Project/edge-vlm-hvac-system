@@ -67,8 +67,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements_jetson.txt ]; then
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f requirements_jetson.txt ]; then
             pip install -r requirements_jetson.txt
+          else
+            echo "⚠️  No requirements file found"
           fi
 
       - name: Generate deployment manifest
@@ -94,6 +98,7 @@ jobs:
             control_logic.py
             vlm_processor.py
             dashboard.py
+            requirements.txt
             requirements_jetson.txt
             deployment-manifest.json
           retention-days: 30
@@ -116,7 +121,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          if [ -f requirements_jetson.txt ]; then
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt 2>&1 | grep -v "already satisfied" || true
+          elif [ -f requirements_jetson.txt ]; then
             pip install -r requirements_jetson.txt 2>&1 | grep -v "already satisfied" || true
           fi
 
@@ -162,9 +169,17 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
+      - name: Install dependencies and test tools
+        run: |
+          python -m pip install --upgrade pip pytest pytest-cov
+          if [ -f requirements.txt ]; then
+            pip install -r requirements.txt
+          elif [ -f requirements_jetson.txt ]; then
+            pip install -r requirements_jetson.txt
+          fi
+
       - name: Run basic unit tests
         run: |
-          python -m pip install pytest pytest-cov
           if [ -f tests/test_core.py ]; then
             pytest tests/test_core.py -v --tb=short --maxfail=3 || true
           else
