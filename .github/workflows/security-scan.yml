@@ -216,27 +216,34 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install cyclonedx
+      - name: Install dependencies and SBOM tools
         run: |
-          pip install cyclonedx-bom cyclonedx-python-poetry
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install cyclonedx-python[poetry]
 
-      - name: Generate SBOM (CycloneDX)
+      - name: Generate SBOM with pip-audit
         continue-on-error: true
         run: |
           echo "📦 Generating Software Bill of Materials..."
-          if [ -f requirements_jetson.txt ]; then
-            cyclonedx-bom --output-format json --output cyclonedx-bom.json
-            cyclonedx-bom --output-format xml --output cyclonedx-bom.xml
-          fi
+          pip-audit --desc --format json > sbom-audit.json || true
 
-      - name: Upload SBOM
+      - name: Generate SBOM with cyclonedx
+        continue-on-error: true
+        run: |
+          echo "📦 Generating CycloneDX SBOM..."
+          python -m cyclonedx.cli requirements --output-file cyclonedx-sbom.json --output-format json || true
+          python -m cyclonedx.cli requirements --output-file cyclonedx-sbom.xml --output-format xml || true
+
+      - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
         if: always()
         with:
           name: sbom-reports
           path: |
-            cyclonedx-bom.json
-            cyclonedx-bom.xml
+            sbom-audit.json
+            cyclonedx-sbom.json
+            cyclonedx-sbom.xml
           retention-days: 90
 
   # ========== 7. 보안 리포트 생성 ==========
