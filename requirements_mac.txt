@@ -16,7 +16,7 @@
 #
 # ────────────────────────────────────────────────────────────────────────────────
 
-transformers>=4.40.0
+transformers>=5.12.1
 qwen-vl-utils
 accelerate
 opencv-python
