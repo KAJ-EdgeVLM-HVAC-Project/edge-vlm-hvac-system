@@ -24,7 +24,7 @@ python-dotenv>=1.0.0
 ultralytics>=8.0.0
 
 # Utilities
-yt-dlp>=2023.10.0  # YouTube 영상 분석 모드
+yt-dlp>=2026.6.9  # YouTube 영상 분석 모드
 
 # Testing & Quality (선택)
 pytest>=7.0.0
