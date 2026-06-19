@@ -7,6 +7,9 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 
 > 동아대학교 컴퓨터공학과 캡스톤디자인 — 김엔정 조 (김준경·김철호·김민서·정윤찬)
 
+📹 **데모 영상:** [docs/demo/vlm_hvac_demo.mp4](docs/demo/vlm_hvac_demo.mp4) — 동일 인물이 민소매→반팔→아우터로 옷을 바꿀 때 clo·PMV·냉난방이 자동으로 적응하는 실시간 시연
+📊 **실험 결과:** [docs/EXPERIMENT.md](docs/EXPERIMENT.md) — 실제 사무실 영상(Edinburgh Office Dataset) 분석, 데이터셋 출처·그래프·원자료 포함
+
 ---
 
 ## 목차
