@@ -222,3 +222,6 @@ hvac_system_performance.csv
 ppt_build/
 ~$*.pptx
 VLM_HVAC_Capstone.pptx
+
+# Claude Code 로컬 설정 전체 무시 (CLAUDE.md는 추적 유지)
+.claude/

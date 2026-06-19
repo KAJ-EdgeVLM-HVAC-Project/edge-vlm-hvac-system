@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(/opt/homebrew/Caskroom/miniconda/base/envs/fastvlm/bin/pip list:*)",
-      "Bash(/opt/homebrew/Caskroom/miniconda/base/envs/fastvlm/bin/pip install:*)"
-    ]
-  }
-}
