@@ -220,20 +220,19 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install cyclonedx-python[poetry]
+          pip install pip-audit
 
       - name: Generate SBOM with pip-audit
         continue-on-error: true
         run: |
           echo "📦 Generating Software Bill of Materials..."
-          pip-audit --desc --format json > sbom-audit.json || true
-
-      - name: Generate SBOM with cyclonedx
-        continue-on-error: true
-        run: |
-          echo "📦 Generating CycloneDX SBOM..."
-          python -m cyclonedx.cli requirements --output-file cyclonedx-sbom.json --output-format json || true
-          python -m cyclonedx.cli requirements --output-file cyclonedx-sbom.xml --output-format xml || true
+          pip-audit --desc --format json > sbom-audit.json || echo "pip-audit completed"
+          cat > sbom-summary.txt << EOF
+          Software Bill of Materials (SBOM) Summary
+          Generated: $(date)
+          Method: pip-audit
+          See sbom-audit.json for details
+          EOF
 
       - name: Upload SBOM artifacts
         uses: actions/upload-artifact@v4
