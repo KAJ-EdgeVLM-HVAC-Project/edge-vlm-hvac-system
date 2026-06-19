@@ -1,0 +1,16 @@
+[flake8]
+# 런타임 크래시를 유발하는 코드만 게이트로 검사한다
+#   F821 미정의 이름 / F811 중복 정의 / F823 할당 전 사용 / F831 중복 인자 / E999 문법 오류
+# (스타일 경고 E/W, 미사용 import F401 등은 게이트에서 제외)
+select = F821,F811,F823,F831,E999
+exclude =
+    .venv,
+    venv,
+    vlm-env,
+    node_modules,
+    __pycache__,
+    .git,
+    results,
+    ppt_build,
+    week2,week3,week4,week5,week6,week8
+max-line-length = 120

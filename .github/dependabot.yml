@@ -1,0 +1,21 @@
+# Dependabot: 의존성 보안 업데이트 자동 PR
+# 보안 요건(Dependabot) 충족 — pip 패키지와 GitHub Actions를 주간 점검한다.
+version: 2
+updates:
+  # Python 패키지 (requirements_mac.txt / requirements_jetson.txt)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "security"
+
+  # GitHub Actions 워크플로우 버전
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "ci"
