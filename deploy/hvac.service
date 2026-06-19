@@ -1,0 +1,30 @@
+# VLM HVAC 시스템 systemd 서비스 (Jetson 상시 가동용)
+#
+# 설치:
+#   sudo cp deploy/hvac.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now hvac
+# 로그 확인:
+#   journalctl -u hvac -f
+#
+# GUI 창이 필요하면 그래픽 세션 로그인 후 DISPLAY가 잡히는 환경에서
+# run.sh를 직접 실행하세요. 이 서비스는 headless 운전 기준입니다.
+
+[Unit]
+Description=VLM-based Intelligent HVAC Control System
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jetson
+WorkingDirectory=/home/jetson/edge-vlm-hvac-system
+Environment=HVAC_HEADLESS=1
+Environment=GGML_CUDA_NO_VMM=1
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/home/jetson/edge-vlm-hvac-system/run.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

@@ -26,11 +26,8 @@ class EnvProfile:
     lunch_end:         int       # 점심 종료 시각 (시)
     # 퇴근 맥락 감지
     departure_enabled: bool
-    # VLM 실패 시 fallback CLO (계절별)
-    clo_summer:        float     # 6–8월
-    clo_spring_fall:   float     # 3–5월, 9–11월
-    clo_winter:        float     # 12–2월
     # VLM 실패 시 fallback MET
+    # (fallback CLO는 계절이 아닌 외부온도 기반 — main._fallback_clo 참고)
     met_baseline:      float
     # 특징 설명 (UI 카드에 표시)
     features:          tuple
@@ -45,7 +42,6 @@ PROFILES: dict[str, EnvProfile] = {
         work_start=9,  work_end=18,
         lunch_enabled=True,  lunch_start=12, lunch_end=13,
         departure_enabled=True,
-        clo_summer=0.6, clo_spring_fall=0.9, clo_winter=1.2,
         met_baseline=1.2,
         features=("출퇴근 패턴 (9~18시)", "점심시간 감지 (12~13시)",
                   "퇴근 맥락 자동 절전", "착석 기반 MET 1.2"),
@@ -58,7 +54,6 @@ PROFILES: dict[str, EnvProfile] = {
         work_start=0,  work_end=24,
         lunch_enabled=False, lunch_start=12, lunch_end=13,
         departure_enabled=False,
-        clo_summer=0.5, clo_spring_fall=0.8, clo_winter=1.0,
         met_baseline=1.0,
         features=("24시간 상시 운영", "자유로운 재실 패턴",
                   "퇴근 감지 비활성", "가벼운 착의 기준"),
@@ -71,9 +66,8 @@ PROFILES: dict[str, EnvProfile] = {
         work_start=6,  work_end=22,
         lunch_enabled=False, lunch_start=12, lunch_end=13,
         departure_enabled=False,
-        clo_summer=0.4, clo_spring_fall=0.4, clo_winter=0.5,
         met_baseline=2.5,
-        features=("계절 무관 반팔 기준 CLO", "높은 대사율 MET 2.5",
+        features=("높은 대사율 MET 2.5", "운동 복장 기준",
                   "점심/퇴근 감지 비활성", "수시 입퇴장 패턴"),
     ),
     "facility": EnvProfile(
@@ -84,7 +78,6 @@ PROFILES: dict[str, EnvProfile] = {
         work_start=8,  work_end=18,
         lunch_enabled=True,  lunch_start=12, lunch_end=13,
         departure_enabled=True,
-        clo_summer=0.7, clo_spring_fall=1.0, clo_winter=1.3,
         met_baseline=1.5,
         features=("규칙적 일과 (8~18시)", "점심시간 감지 (12~13시)",
                   "퇴근 맥락 자동 절전", "활동적 MET 1.5"),

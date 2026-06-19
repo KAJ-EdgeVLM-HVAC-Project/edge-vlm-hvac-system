@@ -46,6 +46,11 @@ COMFORT_TEMP: float = 24.0
 # 쾌적(-0.5~+0.5)으로 나와 AI가 조기 OFF됨. 실제 사무실 기준(22°C)을 하한으로 보장.
 HEAT_FLOOR_TEMP: float = 22.0
 
+# 난방 진입 상한 온도 — 반팔+착석(clo 0.5, met 1.0)은 ISO 7730상 중립온도가
+# 27~28°C라 실내 25°C에서도 PMV ≈ -0.6이 나옴. PMV만 따르면 한여름 25°C에
+# 난방을 켜는 모순이 생기므로, 실내온도가 이 값 이상이면 난방을 금지한다.
+HEAT_CEIL_TEMP: float = 24.0
+
 # ── 목표 온도 테이블 ──────────────────────────────────────────────────────────dsaf
 # (PMV 임계값, 목표 온도) — 리스트는 높은 PMV 순으로 정렬
 # PMV가 임계값 이상이면 해당 목표온도로 적극 냉/난방
@@ -63,6 +68,10 @@ _HEAT_TARGETS: list[tuple[float, float]] = [
 # ── 히스테리시스 임계값 ───────────────────────────────────────────────────────
 PMV_ON:  float = 0.5   # AC 켜는 PMV 절대값
 PMV_OFF: float = 0.2   # AC 끄는 PMV 절대값 (PMV_ON > PMV_OFF → oscillation 방지)
+
+# ── 상태머신 연동 임계값 ──────────────────────────────────────────────────────
+# PRE_DEPARTURE / LUNCH_BREAK 절전 모드: PMV 허용폭을 ±ECO_PMV_ON 으로 완화
+ECO_PMV_ON: float = 1.0
 
 
 # ── 내부 헬퍼 ────────────────────────────────────────────────────────────────
@@ -104,7 +113,7 @@ def _min_fan_from_pmv(pmv_val: float) -> int:
 def decide_control(pmv_val: float, people_count: int, pid: PIDController,
                    hvac_is_on: bool = False, hvac_mode: str = "cool",
                    dt: float = None, current_fan: int = 1,
-                   indoor_temp: float = None):
+                   indoor_temp: float = None, state: str = None):
     """
     PMV 기반 제어 결정 (동적 목표온도 + PMV 비례 팬 속도 + 히스테리시스).
 
@@ -120,12 +129,45 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
                       팬 속도가 PMV 계산에 영향(공기 속도) → PMV 변화 → 팬 속도 재결정
                       이 루프가 히스테리시스 구간에서 Fan1↔Fan2를 5초 간격으로 진동시켜
                       결과적으로 평균 냉방/난방 출력이 반감되는 현상을 막는다.
+        indoor_temp : 현재 실내온도. < HEAT_FLOOR_TEMP(22°C)면 강제 난방,
+                      ≥ HEAT_CEIL_TEMP(24°C)면 난방 금지. None이면 두 보호 모두 미적용.
+        state       : StateManager 상태 문자열 (SystemState.value). None이면 미반영.
+                      ARRIVAL       → 도착 부스트 (팬 +1단)
+                      PRE_DEPARTURE → 절전 (허용폭 ±ECO_PMV_ON, Fan1 고정)
+                      LUNCH_BREAK   → 약운전 유지 (공실이어도 |PMV|>ECO_PMV_ON 시 가동)
 
     Returns:
         (power: bool, target_temp: float, fan_speed: int, mode: str|None)
     """
+    # 난방 금지 조건 — 실내가 이미 충분히 따뜻하면(≥ HEAT_CEIL_TEMP) PMV가
+    # 음수여도 난방하지 않음. (여름 반팔+착석은 25°C에서도 PMV ≈ -0.6)
+    heat_blocked = indoor_temp is not None and indoor_temp >= HEAT_CEIL_TEMP
+
+    # ── 점심 외출: 공실이지만 복귀 대비 약운전 유지 ───────────────────────────
+    # 허용폭을 ±ECO_PMV_ON으로 완화하고 Fan1 저전력 운전.
+    if state == "LUNCH_BREAK":
+        if pmv_val > ECO_PMV_ON:
+            return True, COMFORT_TEMP, 1, "cool"
+        if pmv_val < -ECO_PMV_ON and not heat_blocked:
+            return True, COMFORT_TEMP, 1, "heat"
+        pid.reset()
+        return False, COMFORT_TEMP, 1, None
+
     # 공실 → 즉시 OFF
     if people_count == 0:
+        pid.reset()
+        return False, COMFORT_TEMP, 1, None
+
+    # ── 퇴근 준비 감지: 선제 절전 ─────────────────────────────────────────────
+    # 곧 퇴실할 것으로 판단 → 허용폭 ±ECO_PMV_ON으로 완화, Fan1 고정.
+    if state == "PRE_DEPARTURE":
+        if pmv_val > ECO_PMV_ON:
+            return True, COMFORT_TEMP, 1, "cool"
+        if pmv_val < -ECO_PMV_ON and not heat_blocked:
+            return True, COMFORT_TEMP, 1, "heat"
+        if hvac_is_on and abs(pmv_val) > PMV_OFF and \
+           not (hvac_mode == "heat" and heat_blocked):
+            return True, COMFORT_TEMP, 1, hvac_mode
         pid.reset()
         return False, COMFORT_TEMP, 1, None
 
@@ -143,6 +185,10 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
         1,
     )
 
+    # 도착 직후: 빠른 쾌적 도달을 위해 팬 +1단 부스트
+    if state == "ARRIVAL":
+        fan = min(3, fan + 1)
+
     # ── 냉방 ──────────────────────────────────────────────────────────────────
     if pmv_val > PMV_ON:
         return True, _target_temp(pmv_val, "cool"), fan, "cool"
@@ -153,10 +199,11 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
         return True, COMFORT_TEMP, current_fan, "cool"
 
     # ── 난방 ──────────────────────────────────────────────────────────────────
-    if pmv_val < -PMV_ON:
+    if pmv_val < -PMV_ON and not heat_blocked:
         return True, _target_temp(pmv_val, "heat"), fan, "heat"
 
-    if hvac_is_on and hvac_mode == "heat" and pmv_val < -PMV_OFF:
+    if hvac_is_on and hvac_mode == "heat" and pmv_val < -PMV_OFF \
+            and not heat_blocked:
         # 히스테리시스 유지 — current_fan 그대로 유지(진동 방지)
         return True, COMFORT_TEMP, current_fan, "heat"
 
@@ -170,6 +217,9 @@ def decide_window(pmv_val: float, outdoor_temp: float,
                   hvac_mode: str, people_count: int) -> bool | None:
     """
     창문 개폐 판단.
+
+    ※ 라이브 시스템(main.py)에서는 제거됨 — scenario_runner.py 오프라인
+      시뮬레이션 전용으로만 유지.
 
     우선순위:
       1. 공실           → 닫기

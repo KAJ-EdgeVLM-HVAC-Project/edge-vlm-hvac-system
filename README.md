@@ -30,7 +30,7 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 
 | 단계 | 내용 |
 |------|------|
-| **인지 (Perception)** | YOLOv8n으로 인원 카운팅 / Qwen2-VL-2B로 착의·활동 맥락 파악 / MotionDetector로 실시간 MET 보정 |
+| **인지 (Perception)** | YOLOv8n으로 인원 카운팅 / Qwen3-VL-2B(GGUF)로 착의·활동 맥락 파악 / MotionDetector로 실시간 MET 보정 |
 | **판단 (Context)** | ISO 7730:2005 PMV 6변수 계산 / 5단계 상태 머신(공실·도착·안정·점심·퇴근) |
 | **제어 (Control)** | PID + 동적 목표온도 + 히스테리시스 / RC 열회로 물리 시뮬레이션 |
 
@@ -47,15 +47,16 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
   ├─ [매 3초]       YOLODetector     → people_count
   ├─ [매 30초/bg]   VLMProcessor     → clo / met / room_size / heat_source
   ├─ [매 60초]      WeatherService   → outdoor_temp / humid
-  │                 AirQualityService → PM2.5
   │
   └─ [매 5초] 제어 루프
         ThermalEngine  : PMV/PPD 계산 (ISO 7730:2005)
         StateManager   : EMPTY → ARRIVAL → STEADY ⇄ LUNCH_BREAK / PRE_DEPARTURE
         decide_control : power / target_temp / fan_speed / mode
+                         (ARRIVAL 부스트 · PRE_DEPARTURE 절전 · LUNCH 약운전)
         HVACSimulator  : indoor_temp / indoor_humid 물리 시뮬레이션 (RC 열회로 τ=3600s)
+        EnergyMonitor  : AI vs 룰베이스(24°C/Fan2) 실시간 Wh 비교 + 쾌적율
         │
-        ├─ Dashboard    : 운영자 창 (카메라 + 상태 패널)
+        ├─ Dashboard    : 운영자 창 (카메라 + 상태 패널)   ※ headless 시 생략
         ├─ UserDisplay  : 사용자 창 (리모컨 UI)
         └─ CSV 로그     : hvac_system_performance.csv
 ```
@@ -69,7 +70,7 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 | `rh` 상대습도 | SHT31 센서 / 시뮬레이션 | % |
 | `vel` 기류속도 | **고정 0.1 m/s** | ISO 7730 정지기류 기준 (팬 속도 미반영) |
 | `met` 대사율 | VLMProcessor / MotionDetector | 1.0(착석) ~ 3.0(운동) |
-| `clo` 착의량 | VLMProcessor / 계절 fallback | 0.5(반팔) ~ 1.3(아우터) |
+| `clo` 착의량 | VLMProcessor / 외부온도 기반 fallback | 0.5(반팔) ~ 1.3(아우터) |
 
 ### 제어 전략 (AI vs 규칙기반)
 
@@ -87,17 +88,17 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 
 ```
 main.py               메인 루프 — 카메라·영상 모드, 스레딩, CSV 로그
-vlm_processor.py      VLM 추론 — 백엔드 자동 선택 (lcpp→trt→mps→cuda→cpu)
+vlm_processor.py      VLM 추론 — 백엔드 자동 선택 (lcpp→mps→cuda→cpu)
 thermal_engine.py     PMV/PPD 계산 (ISO 7730:2005 완전 구현)
-control_logic.py      PMV → HVAC 제어 결정 (PID + 동적목표온도 + 히스테리시스)
+control_logic.py      PMV → HVAC 제어 결정 (PID + 동적목표온도 + 상태머신 연동)
+energy_monitor.py     AI vs 룰베이스 에너지 비교 (실시간 + 영상 모드 공통)
 hvac_simulator.py     RC 열회로 물리 시뮬레이션 (τ=3600s, dt 기반 통일 물리)
 state_machine.py      5단계 재실 상태 전이 (맥락 점수 기반 퇴근 예측)
 pid_controller.py     PID 제어기 (anti-windup, deadband 포함)
-yolo_detector.py      YOLOv8n 인원 카운팅 (imgsz=320 CPU / 640 TRT Jetson)
+yolo_detector.py      YOLOv8n 인원 카운팅 (imgsz=320 Mac / 640 Jetson)
 motion_detector.py    프레임 차분 기반 움직임 강도 → MET 변환
 sensor_interface.py   SHT31 I2C 온습도 센서 (Jetson GPIO Pin3/5, Bus7, 0x44)
 weather_service.py    기상청 API — 외기온도·습도·날씨
-air_quality_service.py 에어코리아 API — PM2.5 대기질
 env_profiles.py       환경 프로파일 (사무실/가정/체육시설/부대시설)
 startup_screen.py     시작화면 — 환경·카메라·동작 모드 선택 GUI
 dashboard.py          운영자 대시보드 OpenCV 렌더링
@@ -112,21 +113,33 @@ scenario_runner.py    JSON 시나리오 기반 오프라인 시뮬레이션 (독
 
 `VLMProcessor`가 시작 시 자동으로 최적 백엔드를 선택한다.
 
-| 우선순위 | 백엔드 | 조건 | 추론 속도 |
-|----------|--------|------|----------|
-| 1 | **lcpp** — llama.cpp CUDA INT4 | `~/llama.cpp/build/bin/llama-mtmd-cli` 존재 | ~15s (Jetson GPU) |
-| 2 | **trt** — TensorRT FP16 | `./qwen2vl_engine/` 존재 | ~5s |
-| 3 | **mps** — Apple Silicon | macOS + MPS 사용 가능 | ~20s |
-| 4 | **cuda** — HuggingFace CUDA | CUDA 사용 가능 | ~30s |
-| 5 | **cpu** — fallback | 항상 | ~60s |
+| 우선순위 | 백엔드 | 조건 | 비고 |
+|----------|--------|------|------|
+| 1 | **lcpp** — llama.cpp CUDA INT4 | `~/llama.cpp/build` CUDA 빌드 + GGUF 존재 | Jetson GPU |
+| 2 | **mps** — Apple Silicon | macOS + MPS 사용 가능 | Mac 개발용 |
+| 3 | **cuda** — HuggingFace CUDA | CUDA 사용 가능 | |
+| 4 | **cpu** — fallback | 항상 | 느림 |
 
-**Jetson 모델 경로:**
+**lcpp 추론 방식 (Jetson):**
+1. **llama-server 상주** (기본) — 시작 시 모델 1회 로드 후 HTTP로 추론.
+   `response_format: json_schema`로 출력 JSON을 문법 수준에서 강제 → 파싱 실패 원천 차단.
+2. **llama-mtmd-cli 폴백** — 서버 기동 실패 시. 매 추론마다 모델 재로딩되어 느림.
+
+**Jetson GGUF 모델 자동 탐색:** `~/llama.cpp/models/*/` 에서 (모델.gguf + mmproj.gguf)
+쌍을 찾고, 디렉토리명에 `qwen3` 포함 시 우선 사용. `LCPP_GGUF`/`LCPP_MMPROJ` 환경변수로
+직접 지정 가능.
+
 ```
-~/llama.cpp/models/Qwen2-VL-2B/qwen2vl-2b-q4km.gguf          # LLM Q4_K_M (941 MB)
-~/llama.cpp/models/Qwen2-VL-2B/mmproj-qwen2vl-2b-f16.gguf    # 비전 인코더 FP16 (1.3 GB)
+# 권장 (Qwen3-VL-2B — huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF)
+~/llama.cpp/models/Qwen3-VL-2B/Qwen3-VL-2B-Instruct-Q4_K_M.gguf
+~/llama.cpp/models/Qwen3-VL-2B/mmproj-Qwen3-VL-2B-Instruct-F16.gguf
+
+# 폴백 (기존 Qwen2-VL-2B)
+~/llama.cpp/models/Qwen2-VL-2B/qwen2vl-2b-q4km.gguf          # Q4_K_M (941 MB)
+~/llama.cpp/models/Qwen2-VL-2B/mmproj-qwen2vl-2b-f16.gguf    # FP16 (1.3 GB)
 ```
 
-**VLM 파싱 방어 구조:**
+**VLM 파싱 방어 구조 (CLI 폴백 시):**
 1. ggml 내부 로그 라인 제거
 2. 타이밍 줄(숫자로 시작) 제거
 3. CUDA 에러 키워드 라인 제거
@@ -156,14 +169,15 @@ python main.py --interval 10    # 10초 간격 (M-series Mac 권장)
 ssh jetson@172.20.10.11
 
 cd ~/edge-vlm-hvac-system
-./run.sh                        # DISPLAY·환경변수 자동 감지
+./run.sh                        # venv·DISPLAY·환경변수 자동 감지
 
-# 또는 수동
-DISPLAY=:1 \
-XAUTHORITY=/run/user/1000/gdm/Xauthority \
-GGML_CUDA_NO_VMM=1 \
-PYTHONUNBUFFERED=1 \
-python3 main.py
+# DISPLAY 없으면 자동 headless (창 없이 콘솔+CSV). 강제:
+HVAC_HEADLESS=1 ./run.sh
+
+# 상시 가동 (systemd):
+sudo cp deploy/hvac.service /etc/systemd/system/
+sudo systemctl enable --now hvac
+journalctl -u hvac -f
 ```
 
 ### 시작화면 선택지
@@ -185,12 +199,10 @@ cp .env.example .env
 ```
 
 ```env
-WEATHER_API_KEY=기상청_API_키
-AIR_QUALITY_API_KEY=에어코리아_API_키    # data.go.kr
-AIR_QUALITY_STATION=장림동
+WEATHER_API_KEY=기상청_API_키    # data.go.kr 초단기실황
 ```
 
-API 키가 없어도 기본값(외기 20°C, PM2.5 보통)으로 동작한다.
+API 키가 없어도 기본값(외기 20°C)으로 동작한다.
 
 ---
 
@@ -312,7 +324,8 @@ PYTHONUNBUFFERED=1    # 로그 실시간 출력
 | 브랜치 | 설명 |
 |--------|------|
 | `main` | 안정 버전 — Mac 개발 환경 기준 |
-| `feature/llamacpp-int4-quantization` | **Jetson 배포 버전** — llama.cpp CUDA INT4, 현재 활성 브랜치 |
+| `feature/llamacpp-int4-quantization` | Jetson llama.cpp CUDA INT4 (구버전) |
+| `feature/final-overhaul` | **현재 활성** — llama-server 상주, 상태머신 제어 연동, 실시간 에너지 모니터, headless 지원 |
 
 ---
 

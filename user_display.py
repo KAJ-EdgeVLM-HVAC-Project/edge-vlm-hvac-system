@@ -12,31 +12,33 @@ from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 
 PANEL_W = 460
-PANEL_H = 690
+PANEL_H = 560
 
-# ── 색상 ──────────────────────────────────────────────────────────────────────
-BG          = (250, 251, 255)
+# ── 색상 (라이트 테마) ────────────────────────────────────────────────────────
+BG          = (244, 246, 249)
 CARD        = (255, 255, 255)
-HEADER_BG   = ( 17,  24,  52)
-HDR_TXT     = (255, 255, 255)
-HDR_SUB     = (140, 150, 200)
+HEADER_BG   = (255, 255, 255)
+HDR_TXT     = ( 32,  36,  48)
+HDR_SUB     = (150, 156, 170)
+HDR_LINE    = (228, 231, 238)
+ACCENT      = ( 79, 108, 255)
 
-TXT         = ( 20,  20,  36)
-TXT_S       = ( 98, 102, 125)
-TXT_H       = (170, 172, 190)
-BORDER      = (220, 223, 235)
-SECT_BG     = (240, 243, 252)
+TXT         = ( 32,  36,  48)
+TXT_S       = (110, 116, 134)
+TXT_H       = (175, 180, 192)
+BORDER      = (228, 231, 238)
+SECT_BG     = (246, 247, 250)
 
-COOL        = ( 33, 120, 220)   # 냉방 / 추워요
-WARM        = (220,  72,  35)   # 난방 / 더워요
-GREEN       = ( 34, 168,  88)
-ORANGE      = (230, 148,  22)
-RED         = (200,  50,  52)
-TEAL        = ( 18, 185, 152)
-PURPLE      = ( 95,  85, 210)
+COOL        = ( 37, 118, 235)   # 냉방 / 추워요
+WARM        = (228,  86,  48)   # 난방 / 더워요
+GREEN       = ( 22, 163,  74)
+ORANGE      = (228, 138,  10)
+RED         = (220,  56,  56)
+TEAL        = ( 13, 148, 136)
+PURPLE      = (108,  82, 210)
 
-BTN_COLD_BG = ( 33, 120, 220)   # 추워요 버튼
-BTN_HOT_BG  = (220,  72,  35)   # 더워요 버튼
+BTN_COLD_BG = ( 59, 130, 246)   # 추워요 버튼
+BTN_HOT_BG  = (239,  98,  62)   # 더워요 버튼
 BTN_TXT     = (255, 255, 255)
 
 # ── 버튼 영역 (마우스 콜백용) ─────────────────────────────────────────────────
@@ -131,37 +133,6 @@ def _pmv_bar(draw, x, y, pmv):
         cx += sw + gap
 
 
-def _aq_level(pm10):
-    if pm10 <= 15:  return '아주좋음', TEAL
-    if pm10 <= 30:  return '좋음',    GREEN
-    if pm10 <= 80:  return '보통',    ORANGE
-    if pm10 <= 150: return '나쁨',    WARM
-    return '매우나쁨', RED
-
-
-def _pm25_level(pm25):
-    if pm25 <= 8:   return '아주좋음', TEAL
-    if pm25 <= 15:  return '좋음',    GREEN
-    if pm25 <= 35:  return '보통',    ORANGE
-    if pm25 <= 75:  return '나쁨',    WARM
-    return '매우나쁨', RED
-
-
-def _window_msg(hvac, out_temp, pm10, pmv, people):
-    if people == 0:
-        return '공실', TXT_H
-    if pm10 > 80:
-        return f'미세먼지 나쁨 — 창문 닫으세요', RED
-    if hvac.is_on:
-        m = '난방' if hvac.mode == 'heat' else '냉방'
-        return f'{m} 가동 중 — 창문 닫으세요', ORANGE
-    if pmv > 1.0 and out_temp < hvac.indoor_temp - 2.0:
-        return f'실외 시원({out_temp:.0f}°C) — 창문 열어 환기', COOL
-    if abs(pmv) <= 0.5 and pm10 <= 30:
-        return '공기 맑음 — 환기 권장', GREEN
-    return '현재 상태 유지', TXT_S
-
-
 # ── 공개 API ──────────────────────────────────────────────────────────────────
 
 def build(hvac, sm, ds: dict,
@@ -179,11 +150,13 @@ def build(hvac, sm, ds: dict,
     CW   = PANEL_W - PAD * 2
 
     # ────────────────────────────────────────────────────
-    # 1. 헤더 (64px)
+    # 1. 헤더 (64px) — 흰 배경 + 하단 구분선
     # ────────────────────────────────────────────────────
     draw.rectangle([(0, 0), (PANEL_W, 64)], fill=HEADER_BG)
-    draw.text((PAD, 8),  'Smart HVAC',   font=_f(20, bold=True), fill=HDR_TXT)
-    draw.text((PAD, 36), '스마트 에어컨',  font=_f(14),            fill=HDR_SUB)
+    draw.line([(0, 64), (PANEL_W, 64)], fill=HDR_LINE, width=1)
+    _rrect(draw, PAD, 14, PAD + 10, 24, 5, ACCENT)   # 포인트 도트
+    draw.text((PAD + 20, 8),  'Smart HVAC',   font=_f(20, bold=True), fill=HDR_TXT)
+    draw.text((PAD + 20, 36), '스마트 에어컨',  font=_f(14),            fill=HDR_SUB)
 
     ts = datetime.now().strftime('%H:%M')
     tf = _f(20, bold=True)
@@ -191,14 +164,14 @@ def build(hvac, sm, ds: dict,
     draw.text((PANEL_W - PAD - tw, 10), ts, font=tf, fill=HDR_TXT)
 
     smap = {'EMPTY':         ('공실',     TXT_H),
-            'ARRIVAL':       ('도착',     (130, 200, 255)),
-            'STEADY':        ('운전중',   (100, 240, 150)),
-            'LUNCH_BREAK':   ('점심외출', (50,  210, 185)),
-            'PRE_DEPARTURE': ('절전',     (255, 190, 80))}
+            'ARRIVAL':       ('도착',     COOL),
+            'STEADY':        ('운전중',   GREEN),
+            'LUNCH_BREAK':   ('점심외출', TEAL),
+            'PRE_DEPARTURE': ('절전',     ORANGE)}
     slbl, scol = smap.get(sm.state.value, (sm.state.value, TXT_H))
-    sf = _f(13)
+    sf = _f(13, bold=True)
     sw = sf.getbbox(slbl)[2] - sf.getbbox(slbl)[0]
-    draw.text((PANEL_W - PAD - sw, 40), slbl, font=sf, fill=scol)
+    draw.text((PANEL_W - PAD - sw, 42), slbl, font=sf, fill=scol)
 
     y = 74
 
@@ -218,7 +191,6 @@ def build(hvac, sm, ds: dict,
 
     # 쾌적도 뱃지
     pc = GREEN if abs(pmv) <= 0.5 else ORANGE if abs(pmv) <= 1.5 else RED
-    bw = _badge(draw, 0, 0, comfort[:6], pc)  # measure only
     bw = _f(13, bold=True).getbbox(comfort[:6])[2] - _f(13, bold=True).getbbox(comfort[:6])[0] + 16
     _badge(draw, PANEL_W // 2 - bw // 2, y + 86, comfort[:6], pc)
 
@@ -309,37 +281,27 @@ def build(hvac, sm, ds: dict,
     y += ah + 10
 
     # ────────────────────────────────────────────────────
-    # 6. 공기질 (76px)
+    # 6. 에너지 절감 (76px)
     # ────────────────────────────────────────────────────
     qh = 76
     _rrect(draw, PAD, y, PAD + CW, y + qh, 12, CARD, BORDER)
 
-    draw.text((PAD + 16, y + 10), '공기질', font=_f(14, bold=True), fill=TXT)
+    draw.text((PAD + 16, y + 10), '에너지 절감', font=_f(14, bold=True), fill=TXT)
 
-    pm10 = int(ds.get('pm10', 0))
-    pm25 = int(ds.get('pm25', 0))
-    pm10_lv, pm10_c = _aq_level(pm10)
-    pm25_lv, pm25_c = _pm25_level(pm25)
+    ai_wh   = ds.get('ai_wh', 0.0)
+    saved   = ds.get('rb_wh', 0.0) - ai_wh
+    sav_pct = ds.get('savings_pct', 0.0)
+    sav_col = GREEN if sav_pct > 0 else (RED if sav_pct < 0 else TXT_S)
 
-    draw.text((PAD + 16,  y + 36), 'PM10',  font=_f(12), fill=TXT_S)
-    draw.text((PAD + 16,  y + 52), f'{pm10} ㎍', font=_f(14), fill=TXT)
-    _badge(draw, PAD + 70, y + 52, pm10_lv, pm10_c)
+    draw.text((PAD + 16,  y + 36), 'AI 소비',  font=_f(12), fill=TXT_S)
+    draw.text((PAD + 16,  y + 52), f'{ai_wh:.0f} Wh', font=_f(14), fill=TXT)
 
-    draw.text((PAD + 210, y + 36), 'PM2.5', font=_f(12), fill=TXT_S)
-    draw.text((PAD + 210, y + 52), f'{pm25} ㎍', font=_f(14), fill=TXT)
-    _badge(draw, PAD + 264, y + 52, pm25_lv, pm25_c)
+    draw.text((PAD + 150, y + 36), '절감량', font=_f(12), fill=TXT_S)
+    draw.text((PAD + 150, y + 52), f'{saved:+.0f} Wh', font=_f(14), fill=sav_col)
+
+    draw.text((PAD + 290, y + 36), '절감률', font=_f(12), fill=TXT_S)
+    _badge(draw, PAD + 290, y + 52, f'{sav_pct:+.1f}%', sav_col)
 
     y += qh + 10
-
-    # ────────────────────────────────────────────────────
-    # 7. 창문 권장 (50px)
-    # ────────────────────────────────────────────────────
-    wh = 50
-    _rrect(draw, PAD, y, PAD + CW, y + wh, 12, SECT_BG, BORDER)
-    draw.text((PAD + 16, y + 6),  '창문 권장', font=_f(12), fill=TXT_S)
-    wm, wc = _window_msg(hvac, out_temp, pm10, pmv, ppl)
-    draw.text((PAD + 16, y + 24), wm[:38], font=_f(15), fill=wc)
-
-    y += wh + 10
 
     return cv2.cvtColor(np.array(img), cv2.COLOR_RGB2BGR)

@@ -41,6 +41,7 @@ class YOLODetector:
         self.imgsz      = imgsz
         self.conf       = conf
         self._last_count = 0
+        self._last_boxes = []   # [(x1,y1,x2,y2,conf), ...] 화면 표시용
 
         self._device = "cpu" if _is_jetson() else None  # Jetson: cuDNN 엔진 오류 방지
         try:
@@ -77,7 +78,12 @@ class YOLODetector:
             if self._device:
                 kwargs["device"] = self._device
             results = self._model(frame, **kwargs)
-            self._last_count = len(results[0].boxes)
+            boxes = results[0].boxes
+            self._last_count = len(boxes)
+            self._last_boxes = [
+                (int(b[0]), int(b[1]), int(b[2]), int(b[3]), float(c))
+                for b, c in zip(boxes.xyxy.tolist(), boxes.conf.tolist())
+            ]
         except Exception as e:
             print(f"[YOLO] 추론 오류: {e}")
             return self._last_count    # 마지막 성공값 유지
@@ -87,3 +93,8 @@ class YOLODetector:
     @property
     def last_count(self) -> int:
         return self._last_count
+
+    @property
+    def last_boxes(self) -> list:
+        """마지막 감지 박스 [(x1,y1,x2,y2,conf), ...] — 시각화용"""
+        return self._last_boxes
