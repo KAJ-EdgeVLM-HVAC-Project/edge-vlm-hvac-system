@@ -27,7 +27,7 @@ ultralytics>=8.0.0
 yt-dlp>=2026.6.9  # YouTube 영상 분석 모드
 
 # Testing & Quality (선택)
-pytest>=7.0.0
+pytest>=9.1.0
 flake8>=6.0.0
 pylint>=2.17.0
 
