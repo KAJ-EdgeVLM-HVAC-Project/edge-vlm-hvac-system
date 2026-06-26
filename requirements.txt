@@ -9,7 +9,7 @@ accelerate>=0.20.0
 
 # Image/Video Processing
 pillow>=9.0.0
-opencv-python>=4.8.0
+opencv-python>=4.13.0.92
 
 # Data & Visualization
 pandas>=1.5.0
