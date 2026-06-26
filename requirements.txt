@@ -33,7 +33,7 @@ pylint>=2.17.0
 
 # CI/CD & Deployment (선택)
 bandit>=1.9.4
-safety>=2.3.0
+safety>=3.8.1
 
 # Notes:
 # - Jetson: cv2는 시스템 패키지 사용 (위의 opencv-python 제거)
