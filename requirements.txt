@@ -5,7 +5,7 @@
 # Vision Language Model
 transformers>=4.40.0
 qwen-vl-utils
-accelerate>=0.20.0
+accelerate>=1.14.0
 
 # Image/Video Processing
 pillow>=9.0.0
