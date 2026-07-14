@@ -125,13 +125,14 @@ def generate(csv_path: str, output_dir: str) -> dict:
                 fontsize=10, color=C_GOOD, fontweight="bold",
                 arrowprops=dict(arrowstyle="->", color=C_GOOD))
     ax.set_ylabel("Total Energy (Wh)")
-    ax.set_title("Energy Consumption Comparison\n(Simulated, based on fan-stage power model)")
+    ax.set_title("Energy Consumption Comparison\n(Simulated, based on compressor-load power model)")
     ax.set_ylim(0, rb_total_wh * 1.25)
     ax.grid(axis="y", alpha=0.3)
     # 주석: 전력 모델 근거
     ax.text(0.01, 0.02,
-            "Power model: Fan1=800W / Fan2=1200W / Fan3=1600W\n"
-            "Rule-based baseline: Fan2 constant when occupied",
+            "Power model: P = P_fan + P_comp(1200W) x load\n"
+            "load = heat-gain / cooling-capacity (setpoint-aware)\n"
+            "Rule-based baseline: fixed 24C + Fan2 when occupied",
             transform=ax.transAxes, fontsize=7, color=C_GRAY, va="bottom")
     _savefig(fig, output_dir, "04_energy_bar.png")
 
@@ -192,8 +193,10 @@ def generate(csv_path: str, output_dir: str) -> dict:
         f"  Rule-based mean temp    : {stats['rb_mean_indoor_temp']:.2f} °C",
         "",
         "  ── Energy Model Note ──────────────────────────",
-        "  Fan1=800W / Fan2=1200W / Fan3=1600W (assumed)",
-        "  Baseline: Fan2 constant during occupancy",
+        "  P = P_fan + P_comp(1200W rated) x load",
+        "  load = heat-gain / cooling-capacity (setpoint-aware)",
+        "  Fan: 40/70/110 W (speed 1/2/3)",
+        "  Baseline: fixed 24C + Fan2 during occupancy",
         "  Figures saved in: " + output_dir,
         "=" * 60,
     ]

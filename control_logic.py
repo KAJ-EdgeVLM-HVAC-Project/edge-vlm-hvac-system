@@ -51,6 +51,20 @@ HEAT_FLOOR_TEMP: float = 22.0
 # 난방을 켜는 모순이 생기므로, 실내온도가 이 값 이상이면 난방을 금지한다.
 HEAT_CEIL_TEMP: float = 24.0
 
+# 난방 금지 외기온도 — 외기가 이 값 이상이면(여름) PMV가 음수여도 난방하지 않음.
+# ISO 7730 PMV는 계절 적응(여름철 더위 순응)을 반영 못 해, 반팔 착석자가
+# 실내 22~23°C에서도 "조금 추움"으로 계산되어 한여름에 난방을 켜는 모순이 생긴다.
+# ASHRAE 55 적응형 쾌적 모델 취지에 따라, 외기가 따뜻하면 난방을 차단한다.
+NO_HEAT_OUTDOOR: float = 20.0
+
+# 가벼운 옷차림 기준 — 이 값 이하(민소매 0.35 / 반팔 0.5)면 재실자가 더위에 대비해
+# 가볍게 입은 것으로 보고, 실내가 적당히 따뜻하면(≥ HEAT_FLOOR_TEMP) 난방을 억제한다.
+# 근거: ISO 7730 PMV는 반팔(clo 0.5)을 실내 23°C에서도 "조금 추움"(PMV≈-1.1)으로
+# 계산하지만, 가볍게 입은 사람은 그 환경을 스스로 선택한 것이므로(적응형 쾌적/현시
+# 선호) 데울 필요가 없다. 긴팔(0.7)·스웨터(1.0) 등 두껍게 입은 사람은 제외되어
+# 정상 난방하므로 겨울(에든버러 등) 시나리오에는 영향이 없다.
+LIGHT_CLO_THRESHOLD: float = 0.6
+
 # ── 목표 온도 테이블 ──────────────────────────────────────────────────────────dsaf
 # (PMV 임계값, 목표 온도) — 리스트는 높은 PMV 순으로 정렬
 # PMV가 임계값 이상이면 해당 목표온도로 적극 냉/난방
@@ -60,9 +74,9 @@ _COOL_TARGETS: list[tuple[float, float]] = [
     (0.5, 22.0),   # 조금 더움  → 22°C 까지 냉방
 ]
 _HEAT_TARGETS: list[tuple[float, float]] = [
-    (-2.0, 30.0),  # 매우 추움  → 30°C 까지 강난방
-    (-1.0, 28.0),  # 추움       → 28°C 까지 난방
-    (-0.5, 26.0),  # 조금 추움  → 26°C 까지 난방
+    (-2.0, 26.0),  # 매우 추움  → 26°C 까지 난방
+    (-1.0, 25.0),  # 추움       → 25°C 까지 난방
+    (-0.5, 24.0),  # 조금 추움  → 24°C 까지 난방 (과도한 28°C 목표 제거)
 ]
 
 # ── 히스테리시스 임계값 ───────────────────────────────────────────────────────
@@ -113,7 +127,8 @@ def _min_fan_from_pmv(pmv_val: float) -> int:
 def decide_control(pmv_val: float, people_count: int, pid: PIDController,
                    hvac_is_on: bool = False, hvac_mode: str = "cool",
                    dt: float = None, current_fan: int = 1,
-                   indoor_temp: float = None, state: str = None):
+                   indoor_temp: float = None, state: str = None,
+                   outdoor_temp: float = None, clo: float = None):
     """
     PMV 기반 제어 결정 (동적 목표온도 + PMV 비례 팬 속도 + 히스테리시스).
 
@@ -139,9 +154,18 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
     Returns:
         (power: bool, target_temp: float, fan_speed: int, mode: str|None)
     """
-    # 난방 금지 조건 — 실내가 이미 충분히 따뜻하면(≥ HEAT_CEIL_TEMP) PMV가
-    # 음수여도 난방하지 않음. (여름 반팔+착석은 25°C에서도 PMV ≈ -0.6)
-    heat_blocked = indoor_temp is not None and indoor_temp >= HEAT_CEIL_TEMP
+    # 난방 금지 조건 — 셋 중 하나라도 해당하면 PMV가 음수여도 난방 안 함:
+    #  (1) 실내가 이미 충분히 따뜻함(≥ HEAT_CEIL_TEMP)
+    #  (2) 외기가 따뜻함(≥ NO_HEAT_OUTDOOR) → 여름엔 난방 자체를 차단
+    #  (3) 가벼운 옷차림(clo ≤ LIGHT_CLO_THRESHOLD) + 실내가 적당히 따뜻함
+    #      (≥ HEAT_FLOOR_TEMP) → 가볍게 입은 사람은 그 온도를 선택한 것이라 난방 억제.
+    #      (반팔 착석자가 실내 23°C에서 PMV ≈ -1.1로 "조금 추움"이어도 데우지 않음)
+    light_clothing  = clo is not None and clo <= LIGHT_CLO_THRESHOLD
+    light_heat_block = (light_clothing and indoor_temp is not None
+                        and indoor_temp >= HEAT_FLOOR_TEMP)
+    heat_blocked = (indoor_temp is not None and indoor_temp >= HEAT_CEIL_TEMP) \
+        or (outdoor_temp is not None and outdoor_temp >= NO_HEAT_OUTDOOR) \
+        or light_heat_block
 
     # ── 점심 외출: 공실이지만 복귀 대비 약운전 유지 ───────────────────────────
     # 허용폭을 ±ECO_PMV_ON으로 완화하고 Fan1 저전력 운전.
@@ -173,7 +197,9 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
 
     # 난방 최소온도 보장 — 겨울 두꺼운 옷 착용 시 PMV가 19~20°C에서도 쾌적으로
     # 나와 AI가 조기 OFF됨. 실내온도 < HEAT_FLOOR_TEMP이면 24°C까지 계속 난방.
-    if indoor_temp is not None and indoor_temp < HEAT_FLOOR_TEMP:
+    # 단, 외기가 따뜻하면(heat_blocked) 적용 안 함 — 여름 과냉방 방은 난방이 아니라
+    # 냉방 정지가 정답이므로.
+    if indoor_temp is not None and indoor_temp < HEAT_FLOOR_TEMP and not heat_blocked:
         fan_floor = max(_min_fan_from_pmv(pmv_val), 2)
         return True, COMFORT_TEMP, fan_floor, "heat"
 

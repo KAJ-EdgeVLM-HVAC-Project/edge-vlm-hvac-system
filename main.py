@@ -24,12 +24,13 @@ from thermal_engine import ThermalEngine
 from state_machine import StateManager, SystemState
 from motion_detector import MotionDetector
 from yolo_detector import YOLODetector
+from occupancy_tracker import OccupancyTracker
 from pid_controller import PIDController
 from sensor_interface import SensorInterface
 from control_logic import decide_control
 # energy_monitor: video_mode의 룰베이스 비교 베이스라인 상수/함수만 사용
 # (카메라 라이브 모드에는 절감률 표시 안 함 — 영상 분석 모드 전용 지표)
-from energy_monitor import POWER_W, RB_SETPOINT, RB_FAN, rb_watts
+from energy_monitor import RB_SETPOINT, RB_FAN, hvac_watts
 from env_profiles import PROFILES, EnvProfile
 from startup_screen import show_and_select, StartupResult, \
     screen_size as startup_screen_size
@@ -84,7 +85,7 @@ WORK_END_HOUR   = 18
 HEADLESS = (os.getenv("HVAC_HEADLESS") == "1" or
             (platform.system() == "Linux" and not os.getenv("DISPLAY")))
 
-YOLO_INTERVAL_SEC = 3.0   # YOLO 인원 감지 주기 (초) — 루프 속도와 무관하게 시간 기준
+YOLO_INTERVAL_SEC = 0.2   # YOLO 인원 감지 주기 (초) — GPU(TensorRT)라 자주 돌려도 됨
 PMV_UPDATE_SEC    = 5     # PMV 재계산 + PID 제어 주기 (초)
 
 
@@ -263,7 +264,7 @@ def process_vlm_result(vlm_data, people_count, count_source,
     power, target_temp, fan_speed, mode = decide_control(
         adjusted_pmv, people_count, pid, hvac.is_on, hvac.mode,
         current_fan=hvac.fan_speed, indoor_temp=hvac.indoor_temp,
-        state=sm.state.value)
+        state=sm.state.value, outdoor_temp=out_temp, clo=vlm_data["clo"])
 
     if power is False:
         hvac.set_control(power=False, target=hvac.target_temp, fan=1)
@@ -393,7 +394,8 @@ def main(analysis_interval: int = 30):
         departure_enabled  = env_profile.departure_enabled,
     )
     motion_det  = MotionDetector(history_len=10, blur_ksize=21)
-    yolo        = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.15)
+    yolo        = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.25)
+    occ_tracker = OccupancyTracker()   # YOLO 미검출로 재실 튐 방지 (검출-앵커+지속)
     pid         = PIDController(kp=0.8, ki=0.05, kd=0.3)
     sensor      = SensorInterface(simulator=hvac)
 
@@ -604,8 +606,10 @@ def main(analysis_interval: int = 30):
             if use_camera:
                 yolo_count = yolo.count_people(frame)
                 if yolo_count >= 0:
-                    last_people_count = yolo_count
-                    last_count_source = "yolo"
+                    # 검출-앵커 재실 추정 (순간 미검출로 0 튐 방지)
+                    last_people_count = occ_tracker.update(
+                        yolo_count, motion_det.current_score, now=time.time())
+                    last_count_source = "held" if occ_tracker.is_held else "yolo"
             else:
                 # 시뮬레이션 모드: 사람 1명으로 가정 (상태 전이 테스트 가능)
                 last_people_count = 1
@@ -671,7 +675,9 @@ def main(analysis_interval: int = 30):
             power, tgt, fan, mode = decide_control(
                 adjusted_pmv, last_people_count, pid, hvac.is_on, hvac.mode,
                 current_fan=hvac.fan_speed, indoor_temp=hvac.indoor_temp,
-                state=sm.state.value)
+                state=sm.state.value, clo=eff_clo,
+                outdoor_temp=(env_override["outdoor_temp"]
+                              if env_override["enabled"] else out_temp))
             if power is True:
                 hvac.set_control(power=True, target=tgt, fan=fan, mode=mode)
             elif power is False:
@@ -712,7 +718,7 @@ def main(analysis_interval: int = 30):
                 vlm_data, last_people_count, last_count_source,
                 motion_det, hvac, sm, engine, pid,
                 sensor, display_state,
-                out_temp, out_humid, out_weather, out_wind,
+                eff_out_temp, eff_out_humid, out_weather, out_wind,
                 pmv_preference=pref_state['value'],
             )
             save_log(log_row)
@@ -747,7 +753,7 @@ def main(analysis_interval: int = 30):
 
             cam_h   = display_frame.shape[0]
             panel   = dash.build(cam_h, hvac, sm,
-                                 out_temp, out_humid, out_weather, out_wind,
+                                 eff_out_temp, eff_out_humid, out_weather, out_wind,
                                  display_state, manual_ctrl, env_override,
                                  vlm_data=last_vlm_data,
                                  vlm_time=last_vlm_time,
@@ -765,7 +771,7 @@ def main(analysis_interval: int = 30):
 
             user_img = udisplay.build(
                 hvac, sm, display_state,
-                pref_state['value'], pmv_history, occ_pred, out_temp,
+                pref_state['value'], pmv_history, occ_pred, eff_out_temp,
             )
             if frame_count == 1:
                 # 리사이즈 가능한 창으로 생성 (imshow 기본은 고정 크기)
@@ -863,13 +869,22 @@ def main(analysis_interval: int = 30):
         elif ch == "e":
             env_override["enabled"] = not env_override["enabled"]
             if env_override["enabled"]:
-                env_override["indoor_temp"]   = round(hvac.indoor_temp, 1)
-                env_override["outdoor_temp"]  = round(out_temp, 1)
-                env_override["indoor_humid"]  = round(hvac.indoor_humid, 1)
-                env_override["outdoor_humid"] = round(out_humid, 1)
-                print("[환경 오버라이드 ON] 현재값으로 초기화")
+                # 최초 1회만 현재값으로 스냅샷 — 이후엔 사용자가 설정한 값을 유지.
+                # (껐다 다시 켜도 직전 설정이 살아있도록)
+                if not env_override.get("snapshotted"):
+                    env_override["indoor_temp"]   = round(hvac.indoor_temp, 1)
+                    env_override["outdoor_temp"]  = round(out_temp, 1)
+                    env_override["indoor_humid"]  = round(hvac.indoor_humid, 1)
+                    env_override["outdoor_humid"] = round(out_humid, 1)
+                    env_override["snapshotted"]   = True
+                    print("[환경 오버라이드 ON] 현재값으로 초기화")
+                else:
+                    print(f"[환경 오버라이드 ON] 이전 설정 유지 "
+                          f"(실외 {env_override['outdoor_temp']}°C / "
+                          f"실내 {env_override['indoor_temp']}°C)")
             else:
-                print("[환경 오버라이드 OFF] 실제 시뮬레이션 복귀")
+                print("[환경 오버라이드 OFF] 실제 센서/날씨로 복귀 "
+                      "(설정값은 보존 — e 다시 누르면 복원)")
 
         elif env_override["enabled"] and not manual_ctrl["enabled"]:
             sel_key = _ENV_VARS[env_override["selected"]]
@@ -899,20 +914,15 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                init_indoor_humid: float = 50.0,
                outdoor_temp: float = 30.0):
     """
-    영상 파일 분석 모드 — 논문/발표용 데이터 생성.
+    영상 파일 실시간 스트리밍 분석 모드 — 카메라 라이브 모드와 동일한 경험.
 
-    mp4/avi 등 영상 파일을 프레임별로 처리해 AI 제어 결과와
-    룰베이스 베이스라인을 동시에 계산하고 CSV·그래프·요약을 자동 저장합니다.
+    영상을 실제 프레임레이트로 재생하며(2시간 영상 = 실제 2시간 소요), 카메라
+    모드와 똑같이 (1) 매 프레임 물리 시뮬레이션, (2) 백그라운드 스레드 VLM,
+    (3) 운영자·사용자 대시보드를 구동한다. 동시에 룰베이스(24°C/Fan2)
+    베이스라인을 병렬 시뮬레이션해 AI 대비 에너지 절감을 실시간으로 표시하고,
+    종료(영상 끝 또는 q) 시 CSV·그래프·요약 리포트를 자동 생성한다.
 
-    출력 구조 (output_dir/):
-      analysis_log.csv          : 프레임별 전체 로그 (AI + 룰베이스)
-      01_pmv_comparison.png     : PMV 시계열 비교
-      02_indoor_temp.png        : 실내온도 비교
-      03_energy_cumulative.png  : 누적 에너지 소비
-      04_energy_bar.png         : 총 에너지 절감 막대
-      05_comfort_rate.png       : 쾌적율 파이차트
-      06_activity_distribution.png : VLM 활동 분포
-      summary.txt               : 핵심 수치 요약
+    출력 (output_dir/): analysis_log.csv + 그래프 6종 + summary.txt
     """
     import report_generator
 
@@ -923,290 +933,360 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
     os.makedirs(output_dir, exist_ok=True)
     csv_path = os.path.join(output_dir, "analysis_log.csv")
 
-    # ── 컴포넌트 초기화 ──────────────────────────────────────────────────────
+    YOLO_SEC = 0.2     # YOLO 인원 감지 주기 (영상 시간 기준) — GPU라 자주 가능
+    CTRL_SEC = 5.0     # PMV 재계산·제어 갱신 주기
+    DASH_SEC = 0.25    # 대시보드 렌더 주기 (영상은 매 프레임 표시, 패널만 스로틀)
+    LOG_SEC  = float(analysis_interval)   # CSV 로깅 주기 (기존과 동일 밀도)
+
     print(f"\n{'='*60}")
-    print(f"  영상 분석 모드")
+    print(f"  영상 실시간 분석 모드 (카메라 모드와 동일 파이프라인)")
     print(f"  파일   : {video_path}")
     print(f"  출력   : {output_dir}")
-    print(f"  VLM 주기: {analysis_interval}초")
+    print(f"  VLM 주기: {analysis_interval}초  |  실시간 재생 — 영상 길이만큼 소요")
     print(f"{'='*60}\n")
 
-    # ── 로딩 화면 표시 ───────────────────────────────────────────────────────
-    _loading_win = "HVAC Video Analysis"
+    # ── 로딩 화면 ──
     if not HEADLESS:
-        _load_img = np.full((300, 700, 3), (249, 246, 244), dtype=np.uint8)  # BGR 라이트
+        _load_img = np.full((300, 700, 3), (249, 246, 244), dtype=np.uint8)
         cv2.putText(_load_img, "VLM Model Loading...", (60, 100),
                     cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 108, 79), 2)
         cv2.putText(_load_img, os.path.basename(video_path), (60, 160),
                     cv2.FONT_HERSHEY_SIMPLEX, 0.7, (134, 116, 110), 1)
-        cv2.putText(_load_img, "Please wait (10~30 sec)", (60, 220),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (74, 163, 22), 1)
-        cv2.namedWindow(_loading_win, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(_loading_win, 700, 300)
-        cv2.imshow(_loading_win, _load_img)
+        cv2.namedWindow("HVAC Operator", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        cv2.imshow("HVAC Operator", _load_img)
         cv2.waitKey(1)
 
-    vlm    = VLMProcessor()
-    engine = ThermalEngine()
-    pid_ai = PIDController(kp=0.8, ki=0.05, kd=0.3)
-    pid_rb = PIDController(kp=0.8, ki=0.05, kd=0.3)
-    yolo   = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.15)
-    hvac_ai = HVACSimulator(room_size=ROOM_SIZE_M2)
-    hvac_rb = HVACSimulator(room_size=ROOM_SIZE_M2)  # 룰베이스 전용 시뮬레이터
+    # ── 컴포넌트 (카메라 모드와 동일) ──
+    vlm        = VLMProcessor()
+    engine     = ThermalEngine()
+    pid_ai     = PIDController(kp=0.8, ki=0.05, kd=0.3)
+    yolo       = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.25)
+    occ_tracker = OccupancyTracker()   # YOLO 미검출로 재실 튐 방지 (검출-앵커+지속)
+    motion_det = MotionDetector(history_len=10, blur_ksize=21)
+    sm         = StateManager(lunch_enabled=False, departure_enabled=False)
+    hvac_ai    = HVACSimulator(room_size=ROOM_SIZE_M2)
+    hvac_rb    = HVACSimulator(room_size=ROOM_SIZE_M2)   # 룰베이스 전용 시뮬레이터
+    hvac_ai.set_room(ROOM_SIZE_M2, False)
+    hvac_rb.set_room(ROOM_SIZE_M2, False)
+    hvac_ai.indoor_temp  = init_indoor_temp;  hvac_ai.indoor_humid = init_indoor_humid
+    hvac_rb.indoor_temp  = init_indoor_temp;  hvac_rb.indoor_humid = init_indoor_humid
     energy_ai_wh = 0.0
     energy_rb_wh = 0.0
+    out_temp  = outdoor_temp
+    out_humid = 60.0
 
-    # 룰베이스 상수(RB_SETPOINT/RB_FAN/POWER_W)는 energy_monitor 모듈과 공유
+    # ── 영상 열기 ──
+    # 메타데이터(fps·총프레임)는 일반 백엔드로 먼저 읽는다.
+    _meta = cv2.VideoCapture(video_path)
+    fps          = _meta.get(cv2.CAP_PROP_FPS) or 30.0
+    total_frames = int(_meta.get(cv2.CAP_PROP_FRAME_COUNT) or 0)
+    _meta.release()
+    if fps <= 1 or fps > 120:
+        fps = 30.0
+    frame_period = 1.0 / fps
+    duration_sec = total_frames / fps if total_frames else 0.0
 
-    # ── 영상 열기 ─────────────────────────────────────────────────────────────
-    cap = cv2.VideoCapture(video_path)
-    fps          = cap.get(cv2.CAP_PROP_FPS) or 30.0
-    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    duration_sec = total_frames / fps
+    # 실제 디코드: Jetson은 하드웨어 디코더(nvv4l2decoder)로 CPU 부담 없이 실시간 확보.
+    # (소프트웨어 디코드는 720p 고fps에서 실시간을 못 따라가 슬로우모션이 됨)
+    cap = None
+    if _is_jetson():
+        _gst = (f'filesrc location="{video_path}" ! decodebin ! '
+                'nvvidconv ! video/x-raw,format=BGRx ! '
+                'videoconvert ! video/x-raw,format=BGR ! '
+                'appsink max-buffers=2 drop=false sync=false')
+        cap = cv2.VideoCapture(_gst, cv2.CAP_GSTREAMER)
+        if not cap.isOpened():
+            print("[영상] HW 디코더 열기 실패 → 소프트웨어 디코드로 폴백")
+            cap = None
+    if cap is None:
+        cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"[Error] 영상 열기 실패: {video_path}")
+        vlm.close()
+        return
 
-    effective_interval = analysis_interval
-    vlm_every_n = max(1, int(fps * effective_interval))
+    print(f"  FPS: {fps:.1f}  |  총 {total_frames} 프레임  |  "
+          f"{duration_sec/60:.1f}분 (실시간 재생)")
+    print(f"  초기 실내: {init_indoor_temp:.1f}°C / {init_indoor_humid:.1f}%  "
+          f"외기: {out_temp:.1f}°C\n")
+    print("분석 시작... (q키로 중단, 중단해도 리포트 생성)\n")
 
-    print(f"  FPS: {fps:.1f}  |  총 {total_frames} 프레임  |  {duration_sec:.1f}초")
-    print(f"  VLM 분석 주기: {vlm_every_n} 프레임마다 (≈{effective_interval}초)\n")
-
-    # ── CSV 헤더 ─────────────────────────────────────────────────────────────
+    # ── CSV 헤더 (report_generator 호환) ──
     columns = [
         "video_time_sec", "frame_number",
-        # VLM 출력
         "vlm_activity", "vlm_sleeves", "vlm_outerwear",
         "vlm_room_size", "vlm_heat_source", "vlm_raw",
-        # 공통 입력
         "outdoor_temp", "outdoor_humid", "people_count",
-        # AI 제어
-        "ai_clo", "ai_met",
-        "ai_pmv", "ai_comfort_status",
+        "ai_clo", "ai_met", "ai_pmv", "ai_comfort_status",
         "ai_hvac_on", "ai_target_temp", "ai_fan_speed", "ai_mode",
-        "ai_indoor_temp", "ai_indoor_humid",
-        "ai_energy_wh",
-        # 룰베이스 베이스라인
-        "rb_clo", "rb_met",
-        "rb_pmv", "rb_comfort_status",
+        "ai_indoor_temp", "ai_indoor_humid", "ai_energy_wh",
+        "rb_clo", "rb_met", "rb_pmv", "rb_comfort_status",
         "rb_hvac_on", "rb_target_temp", "rb_fan_speed",
-        "rb_indoor_temp", "rb_indoor_humid",
-        "rb_energy_wh",
+        "rb_indoor_temp", "rb_indoor_humid", "rb_energy_wh",
     ]
     pd.DataFrame(columns=columns).to_csv(csv_path, index=False)
 
-    # ── 상태 변수 ─────────────────────────────────────────────────────────────
-    last_vlm_data   = None
-    last_panel      = None   # 매 프레임 재사용할 정보 패널
-    ai_pmv          = 0.0
-    rb_pmv          = 0.0
-    vlm_step        = 0
-    out_temp        = outdoor_temp
-    out_humid       = 60.0
-    people_count    = 0
-    logged_rows     = 0
+    # ── VLM 백그라운드 스레드 (카메라 모드와 동일) ──
+    frame_lock       = threading.Lock()
+    shared_frame_ref = [None]
+    result_queue     = queue.Queue(maxsize=1)
+    stop_event       = threading.Event()
+    analyzing_ev     = threading.Event()
+    vlm_thread = threading.Thread(
+        target=vlm_worker,
+        args=(vlm, frame_lock, shared_frame_ref, result_queue,
+              stop_event, analysis_interval, None, analyzing_ev),
+        daemon=True,
+    )
+    vlm_thread.start()
 
-    # 초기 실내 조건 설정
-    hvac_ai.set_room(ROOM_SIZE_M2, False)
-    hvac_rb.set_room(ROOM_SIZE_M2, False)
-    hvac_ai.indoor_temp  = init_indoor_temp
-    hvac_ai.indoor_humid = init_indoor_humid
-    hvac_rb.indoor_temp  = init_indoor_temp
-    hvac_rb.indoor_humid = init_indoor_humid
+    # ── 대시보드용 상태 ──
+    display_state = {
+        "pmv_val": 0.0, "comfort_msg": "분석 대기 중",
+        "people_count": 0, "count_source": "yolo", "activity": "-",
+        "met": 1.0, "clo": 1.0, "clothing": "-",
+        "room_size": "medium", "room_size_m2": ROOM_SIZE_M2,
+        "outerwear": "no", "heat_source": "no",
+        "motion_score": 0.0, "met_source": "vlm", "last_analysis": "--:--:--",
+        "ai_wh": 0.0, "rb_wh": 0.0, "savings_pct": 0.0,
+    }
 
-    yolo_every_n = max(1, int(fps * 3))   # YOLO: 3초마다
-    vlm_every_n  = max(1, int(fps * effective_interval))  # VLM: interval마다
-
-    total_steps  = total_frames // vlm_every_n
-    frame_count  = 0
-
-    print(f"  초기 실내: {init_indoor_temp:.1f}°C / {init_indoor_humid:.1f}%  외기: {out_temp:.1f}°C")
-    print(f"  YOLO: 3초마다  VLM: {effective_interval}초마다  총 예상 분석: {total_steps}회\n")
-    print("분석 시작... (q키로 중단 가능)\n")
-
-    if not HEADLESS:
-        if _is_jetson():
-            cv2.startWindowThread()
-        cv2.namedWindow("HVAC Video Analysis", cv2.WINDOW_NORMAL)
-        cv2.resizeWindow("HVAC Video Analysis", 960, 540)
-        cv2.moveWindow("HVAC Video Analysis", 0, 0)
-        cv2.waitKey(1)
+    last_vlm_data = None
+    last_vlm_time = "--:--:--"
+    people_count  = 0
+    ai_pmv = None;  rb_pmv = None
+    ai_comfort = "-";  rb_comfort = "-"
+    ai_clo = 1.0;  ai_met = 1.0
+    last_panel_op = None;  last_user = None
+    frame_count = 0;  logged_rows = 0
+    t_yolo = t_ctrl = t_dash = t_log = -1e9
+    last_vt = 0.0
+    t_start = time.time()
 
     try:
         while True:
+            # ── 실시간 동기화 ──────────────────────────────────────────────
+            # 벽시계보다 뒤처지면 프레임을 디코드 없이 건너뛰어(grab) 따라잡는다.
+            # → 처리 부하가 커도 배속/슬로우 없이 실제 재생속도 유지(2시간 영상=2시간).
+            target_idx = int((time.time() - t_start) * fps)
+            eof = False
+            while frame_count + 1 < target_idx:
+                if not cap.grab():
+                    eof = True
+                    break
+                frame_count += 1
+            if eof:
+                break
             ret, frame = cap.read()
             if not ret:
                 break
-
             frame_count += 1
-            video_time   = frame_count / fps
-            pct          = min(frame_count / total_frames * 100, 100.0)
+            video_time = frame_count / fps
+            dt_v = max(1e-3, video_time - last_vt)   # 이번 처리 프레임까지 실제 영상 경과시간
+            last_vt = video_time
+            pct = min(frame_count / total_frames * 100, 100.0) if total_frames else 0.0
+            if frame.shape[1] > 1280:
+                frame = cv2.resize(frame, (1280, 720))
 
-            # ── YOLO: 3초마다 ────────────────────────────────────────────────
-            if frame_count % yolo_every_n == 0 and yolo.available:
-                people_count = max(0, yolo.count_people(frame))
+            with frame_lock:
+                shared_frame_ref[0] = frame.copy()
+            motion_det.update(frame)
+            display_state["motion_score"] = motion_det.current_score
 
-            # ── VLM 주기 아닌 프레임: 패널 재사용하여 표시 ─────────────────
-            if frame_count % vlm_every_n != 0:
-                if not HEADLESS:
-                    if last_panel is not None:
-                        # 진행 바만 업데이트
-                        bar_w = int(frame.shape[1] * pct / 100)
-                        cur_panel = last_panel.copy()
-                        cv2.rectangle(cur_panel, (0, 0), (frame.shape[1], 6), (40,40,50), -1)
-                        cv2.rectangle(cur_panel, (0, 0), (bar_w, 6), (80,160,255), -1)
-                        disp = np.vstack([frame, cur_panel])
-                    else:
-                        disp = frame
-                    cv2.imshow("HVAC Video Analysis", disp)
-                    if cv2.waitKey(1) & 0xFF == ord('q'):
-                        break
-                continue
+            # ── YOLO 인원 감지 (3초마다) ──
+            if video_time - t_yolo >= YOLO_SEC:
+                t_yolo = video_time
+                if yolo.available:
+                    c = yolo.count_people(frame)
+                    if c >= 0:
+                        # 검출-앵커 재실 추정 (영상 시간 기준, 순간 미검출로 0 튐 방지)
+                        people_count = occ_tracker.update(
+                            c, motion_det.current_score, now=video_time)
+                display_state["people_count"] = people_count
+                display_state["count_source"] = (
+                    "held" if occ_tracker.is_held
+                    else ("yolo" if yolo.available else "vlm_fallback"))
 
-            vlm_step += 1
-            dt_sec = effective_interval
-            dt_h   = dt_sec / 3600.0
+            # ── VLM 결과 수신 (논블로킹) ──
+            try:
+                vd = result_queue.get_nowait()
+                last_vlm_data = vd
+                last_vlm_time = datetime.now().strftime("%H:%M:%S")
+                display_state.update({
+                    "activity":     vd.get("activity", "-"),
+                    "clothing":     vd.get("clothing", "-"),
+                    "clo":          vd.get("clo", 1.0),
+                    "met":          vd.get("met", 1.0),
+                    "sleeves":      vd.get("sleeves", "-"),
+                    "outerwear":    vd.get("outerwear", "no"),
+                    "heat_source":  vd.get("heat_source", "no"),
+                    "room_size":    vd.get("room_size", "medium"),
+                    "room_size_m2": vd.get("room_size_m2", ROOM_SIZE_M2),
+                    "last_analysis": last_vlm_time,
+                })
+            except queue.Empty:
+                pass
 
-            if people_count > 0:
-                print(f"  [{vlm_step}] {video_time:.0f}s ({pct:.0f}%)  "
-                      f"인원:{people_count}  VLM 분석 중...", flush=True)
-                last_vlm_data = vlm.analyze_frame(frame) or vlm._default_result()
-            else:
-                print(f"  [{vlm_step}] {video_time:.0f}s ({pct:.0f}%)  "
-                      f"인원:0  VLM 스킵 (사람 없음)", flush=True)
-                last_vlm_data = {
-                    "clothing": "-", "sleeves": "-", "clo": 1.0, "met": 1.0,
-                    "room_size": "medium", "room_size_m2": ROOM_SIZE_M2,
-                    "heat_source": "no", "outerwear": "no", "activity": "-",
-                }
+            # ── 물리 시뮬레이션 (실제 경과시간 dt_v 기준 — 프레임 스킵과 무관하게 정확) ──
+            room_m2 = (last_vlm_data or {}).get("room_size_m2", ROOM_SIZE_M2)
+            hvac_ai.set_room(room_m2, False)
+            hvac_rb.set_room(room_m2, False)
+            _nsub = max(1, int(dt_v / 0.1))
+            _sdt  = dt_v / _nsub
+            for _ in range(_nsub):
+                hvac_ai.simulate_step(out_temp, out_humid, people_count, dt=_sdt)
+                hvac_rb.simulate_step(out_temp, out_humid, people_count, dt=_sdt)
 
-            # ── 물리 시뮬레이션 누적 ─────────────────────────────────────────
-            sim_steps   = max(1, int(dt_sec * 10))   # 0.1초 단위 분할
-            sim_dt      = dt_sec / sim_steps
-            for _ in range(sim_steps):
-                hvac_ai.simulate_step(out_temp, out_humid, people_count, dt=sim_dt)
-                hvac_rb.simulate_step(out_temp, out_humid, people_count, dt=sim_dt)
+            # ── 제어 갱신 (5초마다) ──
+            if video_time - t_ctrl >= CTRL_SEC:
+                t_ctrl = video_time
+                if last_vlm_data is not None:
+                    ai_clo   = last_vlm_data.get("clo", 1.0)
+                    ai_met   = (motion_det.get_motion_met()
+                                if motion_det.should_override_vlm()
+                                else last_vlm_data.get("met", 1.0))
+                    heat_src = last_vlm_data.get("heat_source", "no")
+                    met_src  = "motion" if motion_det.should_override_vlm() else "vlm"
+                else:
+                    ai_clo = _fallback_clo(out_temp);  ai_met = 1.0
+                    heat_src = "no";  met_src = "default"
 
-            # ── AI 제어 계산 ─────────────────────────────────────────────────
-            ai_clo = last_vlm_data["clo"]
-            ai_met = last_vlm_data["met"]
-            # heat_source → 복사온도 보정 (카메라 모드와 동일 로직)
-            ai_tr = hvac_ai.indoor_temp
-            if last_vlm_data.get("heat_source") == "yes":
-                ai_tr += VLMProcessor.TR_HEAT_OFFSET
-            # room_size → 같은 물리 공간이므로 AI/RB 시뮬레이터 모두 갱신
-            detected_room_m2 = last_vlm_data.get("room_size_m2", ROOM_SIZE_M2)
-            hvac_ai.set_room(detected_room_m2, False)
-            hvac_rb.set_room(detected_room_m2, False)
+                ai_tr = hvac_ai.indoor_temp + (
+                    VLMProcessor.TR_HEAT_OFFSET if heat_src == "yes" else 0.0)
+                if people_count > 0:
+                    ai_pmv = engine.calculate_pmv(hvac_ai.indoor_temp, ai_tr,
+                                                  hvac_ai.indoor_humid, 0.1, ai_met, ai_clo)
+                    ai_comfort = engine.get_comfort_status(ai_pmv)
+                else:
+                    ai_pmv = None;  ai_comfort = "-"
 
-            if people_count > 0:
-                # PMV 기류속도: 팬속도는 온도 시뮬레이션에만 사용.
-                # 실내 체감 기류는 사무실 정지공기 기준 0.1 m/s 고정 (ISO 7730)
-                PMV_VEL = 0.1
-                ai_pmv = engine.calculate_pmv(
-                    hvac_ai.indoor_temp, ai_tr,
-                    hvac_ai.indoor_humid, PMV_VEL, ai_met, ai_clo)
-                ai_comfort = engine.get_comfort_status(ai_pmv)
-            else:
-                ai_pmv    = None
-                ai_comfort = "-"
+                if last_vlm_data is not None:
+                    sm.update(people_count, last_vlm_data.get("outerwear", "no"),
+                              last_vlm_data.get("activity", "-"))
+                else:
+                    sm.update(people_count)
 
-            ai_power, ai_tgt, ai_fan, ai_mode = decide_control(
-                ai_pmv if ai_pmv is not None else 0.0, people_count, pid_ai,
-                hvac_ai.is_on, hvac_ai.mode,
-                dt=dt_sec or 1.0, current_fan=hvac_ai.fan_speed,
-                indoor_temp=hvac_ai.indoor_temp)
-            if ai_power is True:
-                hvac_ai.set_control(power=True, target=ai_tgt, fan=ai_fan, mode=ai_mode)
-            elif ai_power is False:
-                hvac_ai.set_control(power=False, target=hvac_ai.target_temp, fan=1)
+                ai_power, ai_tgt, ai_fan, ai_mode = decide_control(
+                    ai_pmv if ai_pmv is not None else 0.0, people_count, pid_ai,
+                    hvac_ai.is_on, hvac_ai.mode, dt=CTRL_SEC,
+                    current_fan=hvac_ai.fan_speed, indoor_temp=hvac_ai.indoor_temp,
+                    state=sm.state.value, clo=ai_clo, outdoor_temp=out_temp)
+                if ai_power is True:
+                    hvac_ai.set_control(power=True, target=ai_tgt, fan=ai_fan, mode=ai_mode)
+                elif ai_power is False:
+                    hvac_ai.set_control(power=False, target=hvac_ai.target_temp, fan=1)
 
-            ai_watts      = POWER_W.get(hvac_ai.fan_speed, 0) if hvac_ai.is_on else 0
-            energy_ai_wh += ai_watts * dt_h
+                # 룰베이스: PMV는 실제 재실자 기준, 제어만 고정 24°C/Fan2
+                if people_count > 0:
+                    rb_pmv = engine.calculate_pmv(hvac_rb.indoor_temp, hvac_rb.indoor_temp,
+                                                  hvac_rb.indoor_humid, 0.1, ai_met, ai_clo)
+                    rb_comfort = engine.get_comfort_status(rb_pmv)
+                    rb_mode = "heat" if hvac_rb.indoor_temp < RB_SETPOINT else "cool"
+                    hvac_rb.set_control(power=True, target=RB_SETPOINT, fan=RB_FAN, mode=rb_mode)
+                else:
+                    rb_pmv = None;  rb_comfort = "-"
+                    hvac_rb.set_control(power=False, target=RB_SETPOINT, fan=1)
 
-            # ── 룰베이스 계산 ─────────────────────────────────────────────────
-            # PMV 측정은 실제 재실자 기준(VLM 감지값)으로 통일 — RB 제어만 고정 24°C/Fan2
-            if people_count > 0:
-                rb_pmv = engine.calculate_pmv(
-                    hvac_rb.indoor_temp, hvac_rb.indoor_temp,
-                    hvac_rb.indoor_humid, PMV_VEL, ai_met, ai_clo)
-                rb_comfort = engine.get_comfort_status(rb_pmv)
-            else:
-                rb_pmv    = None
-                rb_comfort = "-"
+                display_state.update({
+                    "pmv_val":     ai_pmv if ai_pmv is not None else 0.0,
+                    "comfort_msg": ai_comfort,
+                    "met":         ai_met,  "clo": ai_clo,  "met_source": met_src,
+                })
 
-            if people_count > 0:
-                rb_mode = "heat" if hvac_rb.indoor_temp < RB_SETPOINT else "cool"
-                hvac_rb.set_control(power=True, target=RB_SETPOINT, fan=RB_FAN, mode=rb_mode)
-            else:
-                hvac_rb.set_control(power=False, target=RB_SETPOINT, fan=1)
+            # ── 에너지 누적 (실제 경과시간 dt_v 기준) ──
+            dt_h = dt_v / 3600.0
+            energy_ai_wh += hvac_watts(hvac_ai.is_on, hvac_ai.indoor_temp,
+                                       hvac_ai.target_temp, hvac_ai.fan_speed,
+                                       hvac_ai.mode, hvac_ai.room_size,
+                                       out_temp, people_count) * dt_h
+            energy_rb_wh += hvac_watts(hvac_rb.is_on, hvac_rb.indoor_temp,
+                                       hvac_rb.target_temp, hvac_rb.fan_speed,
+                                       hvac_rb.mode, hvac_rb.room_size,
+                                       out_temp, people_count) * dt_h
+            display_state["ai_wh"] = energy_ai_wh
+            display_state["rb_wh"] = energy_rb_wh
+            display_state["savings_pct"] = (
+                (energy_rb_wh - energy_ai_wh) / energy_rb_wh * 100.0
+                if energy_rb_wh > 0 else 0.0)
 
-            # RB 에너지: 설정온도 도달 후 서모스탯 사이클링(간헐 작동) 반영
-            # 실제 온도조절기는 설정온도 ±0.5°C 이내에서 컴프레서 정지/팬만 운전
-            # → 설정온도에서는 25% 소비(팬+대기), 적극 가열·냉방 시 100% 소비
-            energy_rb_wh += rb_watts(hvac_rb.indoor_temp, people_count) * dt_h
-
-            # ── 화면 표시 ────────────────────────────────────────────────────
-            disp  = frame.copy()
-            h_f, w_f = disp.shape[:2]
-            vt    = int(video_time)
-
-            # 하단 정보 패널 (라이트 배경)
-            panel_h = 160
-            panel = np.full((panel_h, w_f, 3), (249, 246, 244), dtype=np.uint8)
-            cv2.line(panel, (0, 7), (w_f, 7), (236, 231, 228), 1)
-
-            # 진행 바
-            bar_w = int(w_f * pct / 100)
-            cv2.rectangle(panel, (0, 0), (w_f, 6), (236, 231, 228), -1)
-            cv2.rectangle(panel, (0, 0), (bar_w, 6), (255, 108, 79), -1)
-
-            ai_on_str  = f"ON  Tgt:{hvac_ai.target_temp:.0f}C Fan{hvac_ai.fan_speed}" if hvac_ai.is_on  else "OFF"
-            rb_on_str  = f"ON  Tgt:{RB_SETPOINT:.0f}C Fan{RB_FAN}"                   if people_count>0 else "OFF"
-
-            rows = [
-                # 시간 / 진행률
-                (f"[{vlm_step}] {vt//60:02d}:{vt%60:02d} / "
-                 f"{int(duration_sec)//60:02d}:{int(duration_sec)%60:02d}  ({pct:.0f}%)"
-                 f"   People:{people_count}   Outdoor:{out_temp:.1f}C",
-                 (134, 124, 120)),
-                # AI 제어 상태 (블루)
-                (f"[AI]  실내:{hvac_ai.indoor_temp:.1f}C  습도:{hvac_ai.indoor_humid:.0f}%"
-                 f"  PMV:{'--' if ai_pmv is None else f'{ai_pmv:+.2f}'}  {ai_on_str}  {energy_ai_wh:.1f}Wh",
-                 (235, 118, 37)),
-                # 룰베이스 상태 (오렌지)
-                (f"[RB]  실내:{hvac_rb.indoor_temp:.1f}C  습도:{hvac_rb.indoor_humid:.0f}%"
-                 f"  PMV:{'--' if rb_pmv is None else f'{rb_pmv:+.2f}'}  {rb_on_str}  {energy_rb_wh:.1f}Wh",
-                 (10, 138, 228)),
-                # VLM 분석 결과 (그린)
-                (f"[VLM] {last_vlm_data.get('activity','-')}"
-                 f"  sleeves:{last_vlm_data.get('sleeves','-')}"
-                 f"  clo:{last_vlm_data.get('clo',0):.2f}"
-                 f"  met:{last_vlm_data.get('met',0):.1f}"
-                 f"   Saved:{energy_rb_wh-energy_ai_wh:.1f}Wh",
-                 (74, 163, 22)),
-            ]
-            for ri, (text, color) in enumerate(rows):
-                y = 26 + ri * 32
-                cv2.putText(panel, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.48, color, 1,
-                            cv2.LINE_AA)
-
-            last_panel = panel
+            # ── 운영자 + 사용자 대시보드 (패널은 스로틀, 영상은 매 프레임) ──
             if not HEADLESS:
-                disp = np.vstack([disp, panel])
-                cv2.imshow("HVAC Video Analysis", disp)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
+                DISP_W = 720
+                disp_h = int(frame.shape[0] * DISP_W / frame.shape[1])
+                display_frame = cv2.resize(frame, (DISP_W, disp_h))
+                if yolo.available:
+                    sx = DISP_W / frame.shape[1];  sy = disp_h / frame.shape[0]
+                    for (x1, y1, x2, y2, bconf) in yolo.last_boxes:
+                        cv2.rectangle(display_frame,
+                                      (int(x1 * sx), int(y1 * sy)),
+                                      (int(x2 * sx), int(y2 * sy)), (74, 163, 22), 2)
+
+                if (video_time - t_dash >= DASH_SEC) or last_panel_op is None:
+                    t_dash = video_time
+                    last_panel_op = dash.build(
+                        disp_h, hvac_ai, sm, out_temp, out_humid, "-", 0.0,
+                        display_state, None, None, vlm_data=last_vlm_data,
+                        vlm_time=last_vlm_time, vlm_analyzing=analyzing_ev.is_set())
+                    last_user = udisplay.build(
+                        hvac_ai, sm, display_state, 0.0, [], None, out_temp)
+
+                panel = last_panel_op
+                # 진행 바(상단 6px)를 카메라 뷰에 덧그림
+                bar_w = int(display_frame.shape[1] * pct / 100)
+                cv2.rectangle(display_frame, (0, 0), (display_frame.shape[1], 5),
+                              (236, 231, 228), -1)
+                cv2.rectangle(display_frame, (0, 0), (bar_w, 5), (255, 108, 79), -1)
+
+                ph = panel.shape[0]
+                if disp_h < ph:
+                    pad = np.full((ph - disp_h, display_frame.shape[1], 3),
+                                  (249, 246, 244), dtype=np.uint8)
+                    frame_disp = np.vstack([display_frame, pad])
+                else:
+                    frame_disp = display_frame
+                combined = np.hstack([frame_disp, panel])
+                cv2.imshow("HVAC Operator", combined)
+
+                if last_user is not None:
+                    if frame_count == 1:
+                        cv2.namedWindow("HVAC User",
+                                        cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+                        cv2.resizeWindow("HVAC User",
+                                         last_user.shape[1], last_user.shape[0])
+                    cv2.imshow("HVAC User", last_user)
+
+                if frame_count == 1:
+                    try:
+                        scr_w, scr_h = startup_screen_size()
+                        margin = 16
+                        user_w = last_user.shape[1] if last_user is not None else 360
+                        op_w = min(combined.shape[1], scr_w - user_w - margin * 3)
+                        op_h = int(op_w * combined.shape[0] / combined.shape[1])
+                        if op_h > scr_h - 80:
+                            op_h = scr_h - 80
+                            op_w = int(op_h * combined.shape[1] / combined.shape[0])
+                        cv2.resizeWindow("HVAC Operator", op_w, op_h)
+                        cv2.moveWindow("HVAC Operator", margin, 28)
+                        cv2.moveWindow("HVAC User",
+                                       min(margin * 2 + op_w, scr_w - user_w - margin), 28)
+                    except Exception:
+                        pass
+
+                if (cv2.waitKey(1) & 0xFF) == ord('q'):
                     break
 
-            # ── CSV 로깅 ─────────────────────────────────────────────────────
-            if True:
+            # ── CSV 로깅 (analysis_interval마다 1행) ──
+            if video_time - t_log >= LOG_SEC:
+                t_log = video_time
                 row = {
                     "video_time_sec":  round(video_time, 2),
                     "frame_number":    frame_count,
-                    "vlm_activity":    last_vlm_data.get("activity", "-"),
-                    "vlm_sleeves":     last_vlm_data.get("sleeves", "-"),
-                    "vlm_outerwear":   last_vlm_data.get("outerwear", "-"),
-                    "vlm_room_size":   last_vlm_data.get("room_size", "-"),
-                    "vlm_heat_source": last_vlm_data.get("heat_source", "-"),
-                    "vlm_raw":         str(last_vlm_data.get("raw_response", ""))[:200],
+                    "vlm_activity":    (last_vlm_data or {}).get("activity", "-"),
+                    "vlm_sleeves":     (last_vlm_data or {}).get("sleeves", "-"),
+                    "vlm_outerwear":   (last_vlm_data or {}).get("outerwear", "-"),
+                    "vlm_room_size":   (last_vlm_data or {}).get("room_size", "-"),
+                    "vlm_heat_source": (last_vlm_data or {}).get("heat_source", "-"),
+                    "vlm_raw":         str((last_vlm_data or {}).get("raw_response", ""))[:200],
                     "outdoor_temp":    out_temp,
                     "outdoor_humid":   out_humid,
                     "people_count":    people_count,
@@ -1234,23 +1314,39 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                 }
                 pd.DataFrame([row]).to_csv(csv_path, mode="a", index=False, header=False)
                 logged_rows += 1
+                if logged_rows % 10 == 0 or logged_rows == 1:
+                    print(f"  {int(video_time)//60:02d}:{int(video_time)%60:02d} "
+                          f"({pct:.0f}%)  인원:{people_count}  "
+                          f"AI:{energy_ai_wh:.0f}Wh  RB:{energy_rb_wh:.0f}Wh  "
+                          f"절감:{display_state['savings_pct']:.0f}%", flush=True)
+
+            # ── 실시간 페이싱: 앞서가면 대기 (뒤처지면 위에서 프레임 스킵으로 보정) ──
+            slp = t_start + frame_count / fps - time.time()
+            if slp > 0:
+                time.sleep(slp)
 
     except KeyboardInterrupt:
         print("\n[중단됨] 지금까지 분석된 데이터로 리포트 생성합니다...")
     finally:
+        stop_event.set()
+        vlm_thread.join(timeout=5)
         cap.release()
         if not HEADLESS:
-            cv2.destroyWindow("HVAC Video Analysis")
+            cv2.destroyAllWindows()
         vlm.close()
 
-    print(f"\n분석 완료: {vlm_step} 포인트 분석  ({logged_rows} CSV 행)")
-    print(f"CSV 저장: {csv_path}\n")
+    print(f"\n분석 완료: {logged_rows} CSV 행")
+    print(f"  AI 총 에너지 : {energy_ai_wh:.1f} Wh")
+    print(f"  RB 총 에너지 : {energy_rb_wh:.1f} Wh")
+    if energy_rb_wh > 0:
+        print(f"  절감률       : {(energy_rb_wh-energy_ai_wh)/energy_rb_wh*100:.1f}%")
+    print(f"  CSV 저장     : {csv_path}\n")
 
-    # ── 리포트 생성 ───────────────────────────────────────────────────────────
+    # ── 리포트 생성 ──
     if logged_rows >= 2:
         report_generator.generate(csv_path, output_dir)
     else:
-        print("[Report] 데이터 부족 — 최소 2개 VLM 분석 결과 필요")
+        print("[Report] 데이터 부족 — 최소 2개 로그 행 필요")
 
 
 if __name__ == "__main__":
@@ -1282,6 +1378,18 @@ if __name__ == "__main__":
         metavar="DIR",
         help="결과 저장 폴더 (기본: results/video_분석시각/)",
     )
+    parser.add_argument(
+        "--outdoor-temp", type=float, default=30.0,
+        help="영상 분석 시 외기온도 °C (기본 30.0) — 영상 계절에 맞게 설정",
+    )
+    parser.add_argument(
+        "--indoor-temp", type=float, default=26.0,
+        help="영상 분석 시 초기 실내온도 °C (기본 26.0)",
+    )
+    parser.add_argument(
+        "--indoor-humid", type=float, default=50.0,
+        help="영상 분석 시 초기 실내습도 %% (기본 50.0)",
+    )
     args = parser.parse_args()
 
     if args.video:
@@ -1293,6 +1401,9 @@ if __name__ == "__main__":
             video_path=args.video,
             analysis_interval=args.interval,
             output_dir=args.output,
+            init_indoor_temp=args.indoor_temp,
+            init_indoor_humid=args.indoor_humid,
+            outdoor_temp=args.outdoor_temp,
         )
     else:
         main(analysis_interval=args.interval)

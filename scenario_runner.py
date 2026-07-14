@@ -355,7 +355,8 @@ def run_scenario(scenario: dict, output_dir: Path) -> pd.DataFrame:
 
             power, tgt, fan, mode = decide_control(
                 pmv_val, people, pid, hvac.is_on, hvac.mode,
-                dt=5.0, current_fan=hvac.fan_speed)
+                dt=5.0, current_fan=hvac.fan_speed, outdoor_temp=out_temp,
+                clo=clo)
             if power:
                 hvac.set_control(power=True, target=tgt, fan=fan, mode=mode)
             else:
