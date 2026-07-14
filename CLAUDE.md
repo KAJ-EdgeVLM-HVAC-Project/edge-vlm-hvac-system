@@ -139,5 +139,4 @@ cmake --build build --config Release -j4
 - 창문 개폐 권장(decide_window) — 라이브 시스템에서 제거
   (scenario_runner.py의 오프라인 시뮬레이션에는 잔존)
 - TensorRT-LLM 백엔드 — Orin Nano에서 비실용적, llama.cpp로 대체
-
-`week2/`~`week8/` 폴더는 타 교과목 제출물 — 삭제 금지.
+- `week2/`~`week8/` 폴더(타 교과목 제출물) — 제거됨
