@@ -86,9 +86,13 @@ huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF) — `~/llama.cpp/models/Qwen3-VL-
 에 모델+mmproj를 받아두면 자동 선택됨. 기존 Qwen2-VL-2B(Q4_K_M, 941MB)는 폴백.
 
 ### Energy Estimation Model
-`energy_monitor.py` — AI 제어 vs 룰베이스 비교 (camera/video 모드 공통 상수):
-- Fan 1/2/3: 800/1200/1600 W
-- 룰베이스: 재실 시 24°C 고정 + Fan2, 설정온도 ±0.5°C 도달 시 25% 소비(사이클링)
+`energy_monitor.py` — AI 제어 vs 룰베이스 비교 (camera/video 모드 공통, `hvac_watts()`):
+- 압축기 부하 기반: `P = P_fan + P_comp,rated × load`
+- 팬 1/2/3: 40/70/110 W, 압축기 정격: 1200 W
+- 부하율 `load` = 실내로 새어드는 열(외기 전도 + 체열) ÷ 에어컨 냉난방 능력
+  → 설정온도까지 구동 시 1.0(정격), 유지 시 열손실 상쇄분만큼 부분부하(사이클링).
+  부하율 상수(τ·냉난방률·체열)는 `hvac_simulator.py`와 일치시킴 → 설정온도·외기 반영
+- 룰베이스: 재실 시 24°C 고정 + Fan2
 - Comfort rate: 재실 중 PMV ∈ (-0.5, 0.5) 프레임 비율
 
 ### CSV Log Schema (`hvac_system_performance.csv`)

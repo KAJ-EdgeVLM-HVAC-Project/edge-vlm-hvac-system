@@ -5,9 +5,9 @@
   VLM analysis frames     : 156
 
   ── Energy (Simulated) ─────────────────────────
-  AI Control total        : 243.33 Wh
-  Rule-based total        : 465.00 Wh
-  Energy saved            : 221.67 Wh  (47.7%)
+  AI Control total        : 254.33 Wh
+  Rule-based total        : 799.85 Wh
+  Energy saved            : 545.52 Wh  (68.2%)
 
   ── Thermal Comfort (PMV ±0.5) ─────────────────
   AI Control comfort rate : 85.9%
@@ -19,7 +19,9 @@
   Rule-based mean temp    : 22.97 °C
 
   ── Energy Model Note ──────────────────────────
-  Fan1=800W / Fan2=1200W / Fan3=1600W (assumed)
-  Baseline: Fan2 constant during occupancy
-  Figures saved in: results/day_9_20260609_160223
+  P = P_fan + P_comp(1200W rated) x load
+  load = heat-gain / cooling-capacity (setpoint-aware)
+  Fan: 40/70/110 W (speed 1/2/3)
+  Baseline: fixed 24C + Fan2 during occupancy
+  Figures saved in: docs/experiment
 ============================================================
