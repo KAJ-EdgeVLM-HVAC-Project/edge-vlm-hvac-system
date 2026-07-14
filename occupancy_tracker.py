@@ -5,7 +5,7 @@ YOLO 순간 오검출/미검출로 인원이 튀는 것을 막고, "잠깐 잡�
 구분한다. 재실 인원을 어떤 값 d로 바꾸려면 **d가 일정 시간 연속 유지**되어야 한다.
 
 ── 변경 규칙 (재실 → 새 검출값 d) ──────────────────────────────────────────────
-· 상승 (d > 재실)      : d가 count_sec(기본 1초) 이상 지속돼야 반영
+· 상승 (d > 재실)      : d가 count_sec(기본 0.7초) 이상 지속돼야 반영
                           → "잠깐 잡힌 것"은 카운트하지 않음
 · 하강 (0 < d < 재실)  : d가 hold_sec(기본 60초) 이상 유지돼야 반영
                           → 예: 2명이 3명 됐다가 다시 2명으로 1분 유지되면 2명으로
@@ -22,7 +22,7 @@ import time
 class OccupancyTracker:
 
     def __init__(self,
-                 count_sec: float = 1.0,
+                 count_sec: float = 0.7,
                  hold_sec: float = 60.0,
                  empty_confirm_sec: float = 120.0,
                  motion_threshold: float = 1.2,
