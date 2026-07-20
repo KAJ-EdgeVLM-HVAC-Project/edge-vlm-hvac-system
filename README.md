@@ -33,7 +33,7 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 
 | 단계 | 내용 |
 |------|------|
-| **인지 (Perception)** | YOLOv8n으로 인원 카운팅 / Qwen3-VL-2B(GGUF)로 착의·활동 맥락 파악 / MotionDetector로 실시간 MET 보정 |
+| **인지 (Perception)** | YOLO26s(TensorRT GPU)로 인원 감지 / OccupancyTracker로 재실 인원 확정 / Qwen3-VL-2B(GGUF)로 착의·활동 맥락 파악 / MotionDetector로 실시간 MET 보정 |
 | **판단 (Context)** | ISO 7730:2005 PMV 6변수 계산 / 5단계 상태 머신(공실·도착·안정·점심·퇴근) |
 | **제어 (Control)** | PID + 동적 목표온도 + 히스테리시스 / RC 열회로 물리 시뮬레이션 |
 
@@ -47,7 +47,8 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 카메라 프레임 (30fps)
   │
   ├─ [매 프레임]    MotionDetector   → motion_score → MET 실시간 보정
-  ├─ [매 3초]       YOLODetector     → people_count
+  ├─ [매 0.1초]     YOLODetector     → bounding boxes (TensorRT GPU, 약 39ms)
+  ├─ [매 0.1초]     OccupancyTracker → people_count (이동예측 + 헝가리안 매칭)
   ├─ [매 30초/bg]   VLMProcessor     → clo / met / room_size / heat_source
   ├─ [매 60초]      WeatherService   → outdoor_temp / humid
   │
@@ -57,7 +58,7 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
         decide_control : power / target_temp / fan_speed / mode
                          (ARRIVAL 부스트 · PRE_DEPARTURE 절전 · LUNCH 약운전)
         HVACSimulator  : indoor_temp / indoor_humid 물리 시뮬레이션 (RC 열회로 τ=3600s)
-        EnergyMonitor  : AI vs 룰베이스(24°C/Fan2) 실시간 Wh 비교 + 쾌적율
+        EnergyMonitor  : AI vs 룰베이스(냉방 24°C / 난방 25°C, Fan2) 실시간 Wh 비교 + 쾌적율
         │
         ├─ Dashboard    : 운영자 창 (카메라 + 상태 패널)   ※ headless 시 생략
         ├─ UserDisplay  : 사용자 창 (리모컨 UI)
@@ -98,7 +99,8 @@ energy_monitor.py     AI vs 룰베이스 에너지 비교 (실시간 + 영상 �
 hvac_simulator.py     RC 열회로 물리 시뮬레이션 (τ=3600s, dt 기반 통일 물리)
 state_machine.py      5단계 재실 상태 전이 (맥락 점수 기반 퇴근 예측)
 pid_controller.py     PID 제어기 (anti-windup, deadband 포함)
-yolo_detector.py      YOLOv8n 인원 카운팅 (imgsz=320 Mac / 640 Jetson)
+yolo_detector.py      YOLO26s 사람 감지 — Jetson은 TensorRT 엔진 직접 구동(torch 불필요)
+occupancy_tracker.py  재실 인원 추적 — 이동예측 + 헝가리안 매칭, 출입구 자동 학습
 motion_detector.py    프레임 차분 기반 움직임 강도 → MET 변환
 sensor_interface.py   SHT31 I2C 온습도 센서 (Jetson GPIO Pin3/5, Bus7, 0x44)
 weather_service.py    기상청 API — 외기온도·습도·날씨
@@ -333,9 +335,9 @@ PYTHONUNBUFFERED=1    # 로그 실시간 출력
 
 | 브랜치 | 설명 |
 |--------|------|
-| `main` | 안정 버전 — Mac 개발 환경 기준 |
-| `feature/llamacpp-int4-quantization` | Jetson llama.cpp CUDA INT4 (구버전) |
-| `feature/final-overhaul` | **현재 활성** — llama-server 상주, 상태머신 제어 연동, 실시간 에너지 모니터, headless 지원 |
+| `main` | **현재 활성** — Mac/Jetson 공용. llama-server 상주, 상태머신 제어 연동, 실시간 에너지 모니터, headless, YOLO26s TensorRT GPU, 재실 추적 고도화까지 모두 병합 |
+| `feature/llamacpp-int4-quantization` | Jetson llama.cpp CUDA INT4 (구버전, 보관용) |
+| `feature/final-overhaul` | main에 병합 완료 (보관용) |
 
 ---
 

@@ -201,7 +201,11 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
     # 냉방 정지가 정답이므로.
     if indoor_temp is not None and indoor_temp < HEAT_FLOOR_TEMP and not heat_blocked:
         fan_floor = max(_min_fan_from_pmv(pmv_val), 2)
-        return True, COMFORT_TEMP, fan_floor, "heat"
+        # 목표온도는 PMV 단계(_HEAT_TARGETS: 24/25/26°C)를 그대로 따른다.
+        # COMFORT_TEMP로 고정하면 '매우 추움(PMV≤-2)'인데도 24°C에 머물러
+        # 추운 날 난방이 약해진다. 최소 COMFORT_TEMP는 보장.
+        floor_target = max(_target_temp(pmv_val, "heat"), COMFORT_TEMP)
+        return True, floor_target, fan_floor, "heat"
 
     # 팬 속도: PID 출력과 PMV 비례 하한 중 큰 값
     pid_output = pid.compute(pmv_val, dt=dt)

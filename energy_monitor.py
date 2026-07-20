@@ -35,8 +35,23 @@ _TAU       = 3600.0     # 건물 열시상수 (초)
 _BODY_HEAT = 0.0030     # °C/s / person / size_factor (체열)
 _DEADBAND  = 0.1        # 설정온도 도달 판정 폭 (°C)
 
-RB_SETPOINT = 24.0      # 룰베이스 고정 설정 온도 (°C)
-RB_FAN      = 2         # 룰베이스 재실 시 팬 속도
+# ── 룰베이스(비교군) 정의 ────────────────────────────────────────────────────
+# "사람이 직접 조작하는 일반적인 사용 패턴"을 모사한다.
+#   · 재실 중 : 여름이면 냉방 24°C, 겨울이면 난방 25°C로 켜 둠 (팬 중간)
+#   · 공실    : 끄고 나감
+RB_COOL_SETPOINT = 24.0   # 여름 냉방 설정온도 (°C)
+RB_HEAT_SETPOINT = 25.0   # 겨울 난방 설정온도 (°C)
+RB_SEASON_T      = 20.0   # 외기 이 값 이상이면 냉방철, 미만이면 난방철
+RB_FAN           = 2      # 재실 시 팬 속도(중간)
+
+RB_SETPOINT = RB_COOL_SETPOINT   # 하위호환(기존 참조용)
+
+
+def rb_mode_setpoint(outdoor_temp: float):
+    """외기온으로 계절을 판단해 룰베이스 운전모드·설정온도를 결정."""
+    if outdoor_temp is not None and outdoor_temp < RB_SEASON_T:
+        return "heat", RB_HEAT_SETPOINT
+    return "cool", RB_COOL_SETPOINT
 
 
 def hvac_watts(is_on: bool, indoor_temp: float, target_temp: float,
@@ -79,11 +94,11 @@ def hvac_watts(is_on: bool, indoor_temp: float, target_temp: float,
 
 def rb_watts(indoor_temp: float, people_count: int,
              room_size: float = 30.0, outdoor_temp: float = 24.0) -> float:
-    """룰베이스(재실 시 24°C 고정 + Fan2) 순간 소비 전력 (W)."""
+    """룰베이스(재실 시 계절별 설정온도 + Fan2, 공실 시 OFF) 순간 소비 전력 (W)."""
     if people_count <= 0:
         return 0.0
-    mode = "heat" if indoor_temp < RB_SETPOINT else "cool"
-    return hvac_watts(True, indoor_temp, RB_SETPOINT, RB_FAN, mode,
+    mode, setpoint = rb_mode_setpoint(outdoor_temp)
+    return hvac_watts(True, indoor_temp, setpoint, RB_FAN, mode,
                       room_size, outdoor_temp, people_count)
 
 
@@ -115,13 +130,13 @@ class EnergyMonitor:
             dt_sec       : 이번 스텝 경과 시간 (초)
             ai_hvac      : 실제(AI 제어) HVACSimulator — 전력 계산에만 읽음
         """
-        # RB 제어: 재실 시 24°C 고정 + Fan2, 공실 시 OFF
+        # RB 제어: 재실 시 계절별 설정온도(여름24 냉방/겨울25 난방) + Fan2, 공실 시 OFF
         if people_count > 0:
-            mode = "heat" if self._rb.indoor_temp < RB_SETPOINT else "cool"
-            self._rb.set_control(power=True, target=RB_SETPOINT,
+            mode, setpoint = rb_mode_setpoint(outdoor_temp)
+            self._rb.set_control(power=True, target=setpoint,
                                  fan=RB_FAN, mode=mode)
         else:
-            self._rb.set_control(power=False, target=RB_SETPOINT, fan=1)
+            self._rb.set_control(power=False, target=RB_COOL_SETPOINT, fan=1)
 
         self._rb.simulate_step(outdoor_temp, outdoor_humid,
                                people_count=people_count, dt=dt_sec)

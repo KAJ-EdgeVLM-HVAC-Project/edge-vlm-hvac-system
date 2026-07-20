@@ -225,3 +225,18 @@ VLM_HVAC_Capstone.pptx
 
 # Claude Code 로컬 설정 전체 무시 (CLAUDE.md는 추적 유지)
 .claude/
+
+# 가상환경 (보드)
+vlm-env/
+
+# 모델 가중치·엔진 (용량 큼, 각 환경에서 별도 준비)
+*.pt
+*.onnx
+*.engine
+
+# 실험 영상
+*.mp4
+!docs/demo/*.mp4
+
+# 컴파일 산출물
+a.out

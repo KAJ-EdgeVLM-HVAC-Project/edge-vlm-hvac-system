@@ -30,7 +30,8 @@ from sensor_interface import SensorInterface
 from control_logic import decide_control
 # energy_monitor: video_mode의 룰베이스 비교 베이스라인 상수/함수만 사용
 # (카메라 라이브 모드에는 절감률 표시 안 함 — 영상 분석 모드 전용 지표)
-from energy_monitor import RB_SETPOINT, RB_FAN, hvac_watts
+from energy_monitor import (RB_SETPOINT, RB_COOL_SETPOINT, RB_FAN,
+                            hvac_watts, rb_mode_setpoint)
 from env_profiles import PROFILES, EnvProfile
 from startup_screen import show_and_select, StartupResult, \
     screen_size as startup_screen_size
@@ -85,7 +86,7 @@ WORK_END_HOUR   = 18
 HEADLESS = (os.getenv("HVAC_HEADLESS") == "1" or
             (platform.system() == "Linux" and not os.getenv("DISPLAY")))
 
-YOLO_INTERVAL_SEC = 0.2   # YOLO 인원 감지 주기 (초) — GPU(TensorRT)라 자주 돌려도 됨
+YOLO_INTERVAL_SEC = 0.1   # YOLO 인원 감지 주기 (초) — GPU(TensorRT)라 자주 돌려도 됨
 PMV_UPDATE_SEC    = 5     # PMV 재계산 + PID 제어 주기 (초)
 
 
@@ -124,12 +125,60 @@ def save_log(data: dict):
 
 # ── VLM 백그라운드 스레드 ──────────────────────────────────────────────────────
 
+def _draw_doors(display_frame, occ_tracker, sx, sy):
+    """학습된 출입구(사람이 드나드는 지점)를 화면에 표시.
+
+    인접 격자를 하나의 영역으로 합쳐 사각형 + 'DOOR' 라벨로 그린다.
+    """
+    boxes = occ_tracker.door_boxes()
+    if not boxes:
+        return
+    # 인접/겹치는 격자 병합 → 문 하나당 사각형 하나
+    merged = []
+    for x1, y1, x2, y2, hits in sorted(boxes, key=lambda b: -b[4]):
+        hit = False
+        for m in merged:
+            if not (x2 < m[0] - 80 or x1 > m[2] + 80 or y2 < m[1] - 80 or y1 > m[3] + 80):
+                m[0] = min(m[0], x1); m[1] = min(m[1], y1)
+                m[2] = max(m[2], x2); m[3] = max(m[3], y2)
+                m[4] = max(m[4], hits)
+                hit = True
+                break
+        if not hit:
+            merged.append([x1, y1, x2, y2, hits])
+
+    for x1, y1, x2, y2, hits in merged:
+        p1 = (int(x1 * sx), int(y1 * sy))
+        p2 = (int(x2 * sx), int(y2 * sy))
+        cv2.rectangle(display_frame, p1, p2, (255, 140, 0), 2)      # 주황 = 출입구
+        cv2.putText(display_frame, f"DOOR x{int(hits)}",
+                    (p1[0], max(14, p1[1] - 5)),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 140, 0), 1, cv2.LINE_AA)
+
+
+def _crop_person(frame, box, pad=0.12):
+    """사람 박스를 여유(pad)를 두고 잘라낸다. 너무 작으면 None."""
+    h, w = frame.shape[:2]
+    x1, y1, x2, y2 = [int(v) for v in box[:4]]
+    bw, bh = x2 - x1, y2 - y1
+    if bw < 40 or bh < 80:          # 너무 작으면 옷 판별 불가 → 전체 프레임 사용
+        return None
+    mx, my = int(bw * pad), int(bh * pad)
+    x1 = max(0, x1 - mx); y1 = max(0, y1 - my)
+    x2 = min(w, x2 + mx); y2 = min(h, y2 + my)
+    crop = frame[y1:y2, x1:x2]
+    return crop if crop.size else None
+
+
 def vlm_worker(vlm, frame_lock, shared_frame_ref,
                result_queue, stop_event, interval, trigger_event=None,
-               analyzing_event=None):
+               analyzing_event=None, occ_tracker=None):
     """VLM을 백그라운드에서 주기적으로 실행 — 메인 루프를 블로킹하지 않음.
+
+    occ_tracker가 주어지면 **다인 라운드로빈 분석**을 수행한다: 매 주기 가장 오래
+    갱신되지 않은 사람 1명을 골라 그 사람만 크롭해 분석하고 결과를 해당 track에
+    저장한다. 비용은 항상 VLM 1회로 고정되며, 몇 주기 안에 전원이 갱신된다.
     trigger_event가 set되면 타이머 기다리지 않고 즉시 실행 (s키 수동 트리거용).
-    analyzing_event는 추론 진행 중에만 set — 대시보드 '분석중...' 표시용.
     """
     while not stop_event.is_set():
         elapsed = 0.0
@@ -149,8 +198,20 @@ def vlm_worker(vlm, frame_lock, shared_frame_ref,
             frame_copy = shared_frame_ref[0].copy()
         if analyzing_event is not None:
             analyzing_event.set()
+        # 다인 라운드로빈: 이번에 분석할 사람 1명 선택 → 그 사람만 크롭
+        target_id, target_box = (occ_tracker.pick_for_vlm()
+                                 if occ_tracker is not None else (None, None))
+        if target_box is not None:
+            crop = _crop_person(frame_copy, target_box)
+            if crop is not None:
+                frame_copy = crop
+            else:
+                target_id = None          # 크롭 불가 → 전체 프레임 분석으로 폴백
         try:
             result = vlm.analyze_frame(frame_copy)
+            if result and target_id is not None and occ_tracker is not None:
+                occ_tracker.set_person_state(target_id, result.get("clo"),
+                                             result.get("met"))
         except Exception as e:
             # 어떤 추론 실패도 워커 스레드를 죽이지 않도록 방어
             # (스레드가 죽으면 VLM 결과가 영영 안 들어와 clo가 기본값에 고정됨)
@@ -395,7 +456,7 @@ def main(analysis_interval: int = 30):
     )
     motion_det  = MotionDetector(history_len=10, blur_ksize=21)
     yolo        = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.25)
-    occ_tracker = OccupancyTracker()   # YOLO 미검출로 재실 튐 방지 (검출-앵커+지속)
+    occ_tracker = OccupancyTracker()   # 객체추적 기반 재실 추정
     pid         = PIDController(kp=0.8, ki=0.05, kd=0.3)
     sensor      = SensorInterface(simulator=hvac)
 
@@ -482,7 +543,7 @@ def main(analysis_interval: int = 30):
         target=vlm_worker,
         args=(vlm, frame_lock, shared_frame_ref,
               result_queue, stop_event, analysis_interval, vlm_trigger,
-              vlm_analyzing_ev),
+              vlm_analyzing_ev, occ_tracker),
         daemon=True, name="VLM-Background",
     )
     vlm_thread.start()
@@ -606,9 +667,9 @@ def main(analysis_interval: int = 30):
             if use_camera:
                 yolo_count = yolo.count_people(frame)
                 if yolo_count >= 0:
-                    # 검출-앵커 재실 추정 (순간 미검출로 0 튐 방지)
+                    # 객체추적 기반 재실 추정 (가장자리 소멸=퇴장 / 안쪽 소멸=가림 유지)
                     last_people_count = occ_tracker.update(
-                        yolo_count, motion_det.current_score, now=time.time())
+                        yolo.last_boxes, frame.shape, now=time.time())
                     last_count_source = "held" if occ_tracker.is_held else "yolo"
             else:
                 # 시뮬레이션 모드: 사람 1명으로 가정 (상태 전이 테스트 가능)
@@ -648,9 +709,25 @@ def main(analysis_interval: int = 30):
                 met_src  = "default"
 
             tr_c    = s_temp + (VLMProcessor.TR_HEAT_OFFSET if heat_src == "yes" else 0.0)
-            pmv_now = engine.calculate_pmv(ta=s_temp, tr=tr_c,
-                                           rh=s_humid, vel=0.1,
-                                           met=eff_met, clo=eff_clo)
+            # 기류: 가동 중이면 팬속도에 따른 실제 기류를 반영 (정지공기 고정 시
+            # 냉방 중에도 덥게 평가되어 조기 정지·재가동이 반복됨)
+            vel_now = engine.air_velocity(hvac.is_on, hvac.fan_speed)
+            # 다인: 사람별로 PMV를 각각 계산해 중앙값으로 제어.
+            # (clo/met을 평균내면 코트+반팔 같은 극단에서 아무도 만족 못 함)
+            _people = occ_tracker.person_states()
+            if len(_people) >= 2:
+                _pmvs = sorted(engine.calculate_pmv(ta=s_temp, tr=tr_c, rh=s_humid,
+                                                    vel=vel_now, met=m, clo=c)
+                               for c, m in _people)
+                pmv_raw = _pmvs[len(_pmvs) // 2]
+                met_src = f"multi{len(_people)}"
+            else:
+                pmv_raw = engine.calculate_pmv(ta=s_temp, tr=tr_c,
+                                               rh=s_humid, vel=vel_now,
+                                               met=eff_met, clo=eff_clo)
+            # 외기 적응: 여름엔 더 시원하게, 겨울엔 더 따뜻하게 기준선 이동
+            pmv_now = pmv_raw - engine.adaptive_pmv_offset(
+                env_override["outdoor_temp"] if env_override["enabled"] else out_temp)
 
             display_state["pmv_val"]     = pmv_now
             display_state["comfort_msg"] = engine.get_comfort_status(pmv_now)
@@ -750,6 +827,7 @@ def main(analysis_interval: int = 30):
                                 (p1[0], max(16, p1[1] - 6)),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (74, 163, 22), 1,
                                 cv2.LINE_AA)
+                _draw_doors(display_frame, occ_tracker, sx, sy)   # 학습된 출입구
 
             cam_h   = display_frame.shape[0]
             panel   = dash.build(cam_h, hvac, sm,
@@ -933,7 +1011,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
     os.makedirs(output_dir, exist_ok=True)
     csv_path = os.path.join(output_dir, "analysis_log.csv")
 
-    YOLO_SEC = 0.2     # YOLO 인원 감지 주기 (영상 시간 기준) — GPU라 자주 가능
+    YOLO_SEC = 0.1     # YOLO 인원 감지 주기 (영상 시간 기준) — GPU라 자주 가능
     CTRL_SEC = 5.0     # PMV 재계산·제어 갱신 주기
     DASH_SEC = 0.25    # 대시보드 렌더 주기 (영상은 매 프레임 표시, 패널만 스로틀)
     LOG_SEC  = float(analysis_interval)   # CSV 로깅 주기 (기존과 동일 밀도)
@@ -961,7 +1039,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
     engine     = ThermalEngine()
     pid_ai     = PIDController(kp=0.8, ki=0.05, kd=0.3)
     yolo       = YOLODetector(imgsz=768 if _is_jetson() else 320, conf=0.25)
-    occ_tracker = OccupancyTracker()   # YOLO 미검출로 재실 튐 방지 (검출-앵커+지속)
+    occ_tracker = OccupancyTracker()   # 객체추적 기반 재실 추정
     motion_det = MotionDetector(history_len=10, blur_ksize=21)
     sm         = StateManager(lunch_enabled=False, departure_enabled=False)
     hvac_ai    = HVACSimulator(room_size=ROOM_SIZE_M2)
@@ -1035,7 +1113,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
     vlm_thread = threading.Thread(
         target=vlm_worker,
         args=(vlm, frame_lock, shared_frame_ref, result_queue,
-              stop_event, analysis_interval, None, analyzing_ev),
+              stop_event, analysis_interval, None, analyzing_ev, occ_tracker),
         daemon=True,
     )
     vlm_thread.start()
@@ -1056,7 +1134,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
     people_count  = 0
     ai_pmv = None;  rb_pmv = None
     ai_comfort = "-";  rb_comfort = "-"
-    ai_clo = 1.0;  ai_met = 1.0
+    ai_clo = 1.0;  ai_met = 1.2   # ISO 7730 sedentary office work
     last_panel_op = None;  last_user = None
     frame_count = 0;  logged_rows = 0
     t_yolo = t_ctrl = t_dash = t_log = -1e9
@@ -1099,9 +1177,9 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                 if yolo.available:
                     c = yolo.count_people(frame)
                     if c >= 0:
-                        # 검출-앵커 재실 추정 (영상 시간 기준, 순간 미검출로 0 튐 방지)
+                        # 객체추적 기반 재실 추정 (영상 시간 기준)
                         people_count = occ_tracker.update(
-                            c, motion_det.current_score, now=video_time)
+                            yolo.last_boxes, frame.shape, now=video_time)
                 display_state["people_count"] = people_count
                 display_state["count_source"] = (
                     "held" if occ_tracker.is_held
@@ -1148,14 +1226,17 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                     heat_src = last_vlm_data.get("heat_source", "no")
                     met_src  = "motion" if motion_det.should_override_vlm() else "vlm"
                 else:
-                    ai_clo = _fallback_clo(out_temp);  ai_met = 1.0
+                    ai_clo = _fallback_clo(out_temp);  ai_met = 1.2
                     heat_src = "no";  met_src = "default"
 
                 ai_tr = hvac_ai.indoor_temp + (
                     VLMProcessor.TR_HEAT_OFFSET if heat_src == "yes" else 0.0)
+                adapt_off = engine.adaptive_pmv_offset(out_temp)
                 if people_count > 0:
+                    ai_vel = engine.air_velocity(hvac_ai.is_on, hvac_ai.fan_speed)
                     ai_pmv = engine.calculate_pmv(hvac_ai.indoor_temp, ai_tr,
-                                                  hvac_ai.indoor_humid, 0.1, ai_met, ai_clo)
+                                                  hvac_ai.indoor_humid, ai_vel,
+                                                  ai_met, ai_clo) - adapt_off
                     ai_comfort = engine.get_comfort_status(ai_pmv)
                 else:
                     ai_pmv = None;  ai_comfort = "-"
@@ -1178,14 +1259,19 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
 
                 # 룰베이스: PMV는 실제 재실자 기준, 제어만 고정 24°C/Fan2
                 if people_count > 0:
+                    rb_vel = engine.air_velocity(hvac_rb.is_on, hvac_rb.fan_speed)
                     rb_pmv = engine.calculate_pmv(hvac_rb.indoor_temp, hvac_rb.indoor_temp,
-                                                  hvac_rb.indoor_humid, 0.1, ai_met, ai_clo)
+                                                  hvac_rb.indoor_humid, rb_vel,
+                                                  ai_met, ai_clo) - adapt_off
                     rb_comfort = engine.get_comfort_status(rb_pmv)
-                    rb_mode = "heat" if hvac_rb.indoor_temp < RB_SETPOINT else "cool"
-                    hvac_rb.set_control(power=True, target=RB_SETPOINT, fan=RB_FAN, mode=rb_mode)
+                    # 룰베이스: 사람이 직접 조작 — 여름 냉방24 / 겨울 난방25, 팬 중간
+                    rb_mode, rb_setpoint = rb_mode_setpoint(out_temp)
+                    hvac_rb.set_control(power=True, target=rb_setpoint,
+                                        fan=RB_FAN, mode=rb_mode)
                 else:
                     rb_pmv = None;  rb_comfort = "-"
-                    hvac_rb.set_control(power=False, target=RB_SETPOINT, fan=1)
+                    # 공실: 끄고 나감
+                    hvac_rb.set_control(power=False, target=RB_COOL_SETPOINT, fan=1)
 
                 display_state.update({
                     "pmv_val":     ai_pmv if ai_pmv is not None else 0.0,
@@ -1220,6 +1306,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                         cv2.rectangle(display_frame,
                                       (int(x1 * sx), int(y1 * sy)),
                                       (int(x2 * sx), int(y2 * sy)), (74, 163, 22), 2)
+                    _draw_doors(display_frame, occ_tracker, sx, sy)   # 학습된 출입구
 
                 if (video_time - t_dash >= DASH_SEC) or last_panel_op is None:
                     t_dash = video_time
@@ -1306,7 +1393,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                     "rb_pmv":          rb_pmv,
                     "rb_comfort_status": rb_comfort,
                     "rb_hvac_on":      people_count > 0,
-                    "rb_target_temp":  RB_SETPOINT,
+                    "rb_target_temp":  hvac_rb.target_temp,
                     "rb_fan_speed":    RB_FAN if people_count > 0 else 0,
                     "rb_indoor_temp":  round(hvac_rb.indoor_temp, 2),
                     "rb_indoor_humid": round(hvac_rb.indoor_humid, 1),

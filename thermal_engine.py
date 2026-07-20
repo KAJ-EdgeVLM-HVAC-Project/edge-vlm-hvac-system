@@ -36,7 +36,10 @@ class ThermalEngine:
         clo = max(0.0,  min(2.0,   float(clo)))
 
         # 2. 기초 데이터 변환
-        pa  = (rh / 100) * 10 * math.exp(16.6536 - 4030.183 / (ta + 235))  # 수증기 분압 (kPa)
+        # 수증기 분압 (Pa) — ISO 7730 Annex D: pa = RH[%] × 10 × exp(16.6536 − 4030.183/(ta+235))
+        # 뒤의 열손실 식 상수(5733, 5867)가 Pa 기준이므로 반드시 Pa로 계산해야 한다.
+        # (rh/100로 쓰면 100배 작아져 증발 열손실이 과대평가 → 실제보다 시원하게 나옴)
+        pa  = rh * 10 * math.exp(16.6536 - 4030.183 / (ta + 235))
         if not math.isfinite(pa):
             pa = 0.0
 
@@ -111,6 +114,47 @@ class ThermalEngine:
             'conv':     hl_conv     if math.isfinite(hl_conv)     else 0.0,
         }
         return result
+
+    # ── 기류 연동 (팬속도 → 체감 기류속도) ──────────────────────────────────
+    # 냉난방 가동 중에는 실제 기류가 생기므로 PMV에 반영해야 한다.
+    # 정지공기(0.1)로 고정하면 "냉방 중인데 정지공기로 계산"하는 모순이 생겨
+    # 실제보다 덥게(냉방 시) 평가되어 조기 정지·재가동이 반복된다.
+    # 값은 '재실자 위치'의 기류 기준. 토출구 풍속이 아니라 확산 후 체감값이므로
+    # 공조 중인 실내 거주역은 통상 0.1~0.25 m/s 수준이다. 과도하게 잡으면
+    # 켜자마자 PMV가 급락해 즉시 정지하는 on/off 진동이 발생한다.
+    FAN_VEL = {0: 0.10, 1: 0.15, 2: 0.20, 3: 0.25}   # m/s
+
+    @staticmethod
+    def air_velocity(hvac_on: bool, fan_speed: int) -> float:
+        """가동 상태·팬속도에 따른 체감 기류속도(m/s)."""
+        if not hvac_on:
+            return ThermalEngine.FAN_VEL[0]
+        return ThermalEngine.FAN_VEL.get(int(fan_speed), 0.30)
+
+    # ── 외기 적응형 보정 (ASHRAE 55 adaptive comfort 개념) ──────────────────
+    # 사람은 바깥 날씨에 적응한다: 한여름엔 더 시원한 실내를, 한겨울엔 더 따뜻한
+    # 실내를 기대한다. PMV는 이를 반영하지 못하므로 목표 PMV 기준선을 이동시킨다.
+    ADAPT_SUMMER_T = 26.0   # 이 외기 이상이면 여름 모드
+    ADAPT_WINTER_T = 12.0   # 이 외기 이하면 겨울 모드
+    ADAPT_MAX_SHIFT = 0.4   # 목표 PMV 최대 이동폭
+
+    @classmethod
+    def adaptive_pmv_offset(cls, outdoor_temp) -> float:
+        """외기온에 따른 목표 PMV 오프셋.
+
+        여름(더울수록) → 음수: 더 시원한 상태를 '중립'으로 삼아 냉방을 더 오래 유지
+        겨울(추울수록) → 양수: 더 따뜻한 상태를 '중립'으로 삼아 난방을 더 오래 유지
+        """
+        if outdoor_temp is None:
+            return 0.0
+        t = float(outdoor_temp)
+        if t >= cls.ADAPT_SUMMER_T:
+            over = min(t - cls.ADAPT_SUMMER_T, 10.0)      # 26~36°C 구간에서 선형
+            return -cls.ADAPT_MAX_SHIFT * (over / 10.0)
+        if t <= cls.ADAPT_WINTER_T:
+            under = min(cls.ADAPT_WINTER_T - t, 12.0)     # 12~0°C 구간에서 선형
+            return cls.ADAPT_MAX_SHIFT * (under / 12.0)
+        return 0.0
 
     def get_comfort_status(self, pmv):
         """PMV 수치에 따른 상태 텍스트 반환 (한국어/영문)"""

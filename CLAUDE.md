@@ -35,7 +35,8 @@ WEATHER_API_KEY=...   # 기상청 초단기실황 (data.go.kr)
 ### Data Flow
 ```
 Camera frame
-  → YOLODetector      : people count, bounding boxes
+  → YOLODetector      : bounding boxes (Jetson: YOLO26s TensorRT GPU ~39ms)
+  → OccupancyTracker  : people count (이동예측 + 헝가리안 매칭, 출입구 자동 학습)
   → VLMProcessor      : activity, clo, met, room_size, heat_source
   → ThermalEngine     : PMV/PPD (ISO 7730:2005)
   → StateManager      : EMPTY/ARRIVAL/STEADY/PRE_DEPARTURE/LUNCH_BREAK
@@ -59,7 +60,8 @@ Camera frame
 | `state_machine.py` | Occupancy state transitions with departure/lunch detection |
 | `hvac_simulator.py` | Physical indoor environment simulation |
 | `energy_monitor.py` | AI vs rule-based baseline energy comparison (live mode) |
-| `yolo_detector.py` | YOLOv8n people detection |
+| `yolo_detector.py` | YOLO26s people detection (Jetson: torch-free TensorRT 엔진) |
+| `occupancy_tracker.py` | 재실 인원 추적 — 이동예측 + 헝가리안 매칭, 출입구 자동 학습 |
 | `startup_screen.py` | Environment profile selector (shown on launch) |
 | `dashboard.py` | Operator OpenCV window rendering |
 | `user_display.py` | User-facing OpenCV window rendering |
@@ -85,6 +87,26 @@ mmproj*.gguf) 쌍을 찾으며, 디렉토리명에 `qwen3` 포함 시 우선 사
 huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF) — `~/llama.cpp/models/Qwen3-VL-2B/`
 에 모델+mmproj를 받아두면 자동 선택됨. 기존 Qwen2-VL-2B(Q4_K_M, 941MB)는 폴백.
 
+### PMV 정확도 관련 주의사항 (`thermal_engine.py`, `vlm_processor.py`)
+
+과거에 "한여름 실내 27°C인데 쾌적 판정" 문제가 있었고, 원인은 셋이었다.
+아래 값을 임의로 되돌리면 같은 증상이 재발한다.
+
+1. **수증기 분압 단위** — ISO 7730 Annex D는 `pa = RH[%] × 10 × exp(...)` 로 **Pa**
+   단위다. `rh/100`으로 쓰면 100배 작아져 증발 열손실이 과대평가되고, 습도가
+   PMV에 거의 반영되지 않는다.
+2. **대사율(met)** — `sitting = 1.2` (ISO 7730 Table B.1 *sedentary office work*).
+   1.0은 *seated, relaxed*(눈 감고 휴식) 수준이라 사무·연구실 환경에 맞지 않는다.
+   1.0을 쓰면 냉방 시작이 27.3°C까지 밀린다 (1.2면 26.0°C).
+3. **기류 속도** — 냉난방 가동 중에는 `FAN_VEL`(0.10~0.25 m/s)로 팬 단계를 반영한다.
+   정지공기 고정은 "냉방 중인데 정지공기" 모순을 만든다. 단, 값을 크게 잡으면
+   켜자마자 PMV가 급락해 on/off 진동이 생긴다.
+
+**외기 적응 보정**(`adaptive_pmv_offset`)은 목표 PMV 기준선만 ±0.4 이동시킨다.
+ASHRAE 55 적응형 공식(`0.31 × 외기 + 17.8`)을 목표온도로 직접 쓰지 않는 이유는,
+그 공식이 **자연환기 건물** 대상이라 외기 31°C에서 실내 27.4°C를 쾌적으로 보기
+때문이다. ASHRAE 55도 공조 건물에는 PMV를 쓰라고 명시한다.
+
 ### Energy Estimation Model
 `energy_monitor.py` — AI 제어 vs 룰베이스 비교 (camera/video 모드 공통, `hvac_watts()`):
 - 압축기 부하 기반: `P = P_fan + P_comp,rated × load`
@@ -92,7 +114,7 @@ huggingface.co/Qwen/Qwen3-VL-2B-Instruct-GGUF) — `~/llama.cpp/models/Qwen3-VL-
 - 부하율 `load` = 실내로 새어드는 열(외기 전도 + 체열) ÷ 에어컨 냉난방 능력
   → 설정온도까지 구동 시 1.0(정격), 유지 시 열손실 상쇄분만큼 부분부하(사이클링).
   부하율 상수(τ·냉난방률·체열)는 `hvac_simulator.py`와 일치시킴 → 설정온도·외기 반영
-- 룰베이스: 재실 시 24°C 고정 + Fan2
+- 룰베이스: 재실 시 계절별 고정(냉방 24°C / 난방 25°C, 외기 20°C 기준) + Fan2
 - Comfort rate: 재실 중 PMV ∈ (-0.5, 0.5) 프레임 비율
 
 ### CSV Log Schema (`hvac_system_performance.csv`)
@@ -128,10 +150,10 @@ cmake --build build --config Release -j4
 
 ## Branches
 
-- `main` — stable, Mac-compatible version
-- `feature/llamacpp-int4-quantization` — Jetson llama.cpp CUDA INT4 (구버전)
-- `feature/final-overhaul` — 최신: llama-server 상주 + 상태머신 제어 연동 +
-  실시간 에너지 모니터 + headless. Mac/Jetson 공용 (use this)
+- `main` — **현재 활성**. Mac/Jetson 공용. llama-server 상주, 상태머신 제어 연동,
+  실시간 에너지 모니터, headless, YOLO26s TensorRT GPU, 재실 추적 고도화까지 병합 완료
+- `feature/llamacpp-int4-quantization` — Jetson llama.cpp CUDA INT4 (구버전, 보관용)
+- `feature/final-overhaul` — main에 병합 완료 (보관용)
 
 ## Removed Features (의도적 제거)
 

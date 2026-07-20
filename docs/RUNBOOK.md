@@ -40,7 +40,8 @@ sudo systemctl start  hvac.service
 | 추론 동작 | clean JSON 출력 | 콘솔 로그 `[VLM OUTPUT] {"clothing":...}` |
 | 데이터 기록 | CSV 행 증가 | `tail -f hvac_system_performance.csv` |
 | 프로세스 생존 | active (running) | `systemctl status hvac.service` |
-| 추론 지연 | 약 1~3초/회 | 콘솔 `[N] x.xs` 출력 |
+| VLM 추론 지연 | 약 1.2초/회 (Jetson, Qwen3-VL-2B INT4) | 콘솔 `[N] x.xs` 출력 |
+| YOLO 추론 지연 | 약 39ms/회 (Jetson, TensorRT GPU) | 0.1초 주기 실행 |
 
 llama-server 자체 헬스 엔드포인트(`/health`)가 200을 반환하지 않으면 추론
 불가 상태이며, 본 시스템은 자동으로 CLI 추론 모드로 폴백한다.

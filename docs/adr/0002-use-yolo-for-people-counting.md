@@ -53,3 +53,18 @@ VLM 프롬프트에서 `people` 필드를 제거하여 추론 부담을 낮추�
 * `yolo_detector.py` — YOLODetector 클래스
 * `convert_tensorrt.py` — Jetson TRT FP16 엔진 변환 (`--yolo` 옵션)
 * `main.py` — `YOLO_EVERY_N_FRAMES = 5` 주기 실행, `count_source` CSV 기록
+
+---
+
+## 갱신 이력 (2026-07-20)
+
+본 결정(YOLO 계열 전용 검출기로 인원 감지)은 **유효**하며, 구현만 아래와 같이 바뀌었다.
+
+- **모델**: YOLOv8n → **YOLO26s**
+- **실행**: ultralytics(CPU) → **TensorRT 엔진 직접 구동**(Jetson, torch 불필요).
+  보드 PyTorch가 Orin(sm_87)용 빌드가 아니어서 GPU 실행이 불가했던 문제를 우회.
+  1,265ms → 약 39ms.
+- **주기**: 3초 → **0.1초**
+- **후처리 추가**: 검출 박스만으로는 인원이 흔들려, `occupancy_tracker.py`가
+  이동예측 + 헝가리안 매칭으로 재실 인원을 확정한다. (IoU 단독 매칭 시
+  빠른 이동에서 1명이 2명으로 계수되던 문제 해결)
