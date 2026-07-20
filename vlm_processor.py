@@ -105,16 +105,43 @@ class VLMProcessor:
 
     ROOM_SIZE_MAP = {'small': 15.0, 'medium': 30.0, 'large': 60.0}  # m²
 
+    # ISO 7730:2005 Table B.1 (대사율) 기준.
+    #   seated, relaxed        1.0  ← 눈 감고 쉬는 수준
+    #   sedentary office work  1.2  ← 사무/연구실 착석 작업 (타이핑·대화·서류)
+    # 기존에 sitting=1.0을 쓰니 중립온도가 25.7°C까지 올라가 한여름 27°C를
+    # '쾌적'으로 판정했다. 실제 재실자는 사무 작업 중이므로 1.2가 맞다.
     MET_MAP = {
         'lying':      0.8,   # 누워있음 (수면/휴식)
-        'sitting':    1.0,   # 착석 (사무 작업)
-        'standing':   1.2,   # 기립 (가벼운 활동)
-        'walking':    1.5,   # 보행
+        'sitting':    1.2,   # 착석 사무작업 (ISO 7730 sedentary office work)
+        'standing':   1.4,   # 기립 (가벼운 활동, standing relaxed 1.2~light 1.6)
+        'walking':    1.7,   # 보행 (약 2 km/h)
         'cooking':    2.0,   # 조리 (서서 작업)
         'exercising': 3.0,   # 운동 (유산소)
     }
     MET_DEFAULT = 1.2   # 분류 불가 시 기립 수준
     TR_HEAT_OFFSET = 4.0  # 열원 감지 시 복사온도 보정값 (°C)
+
+    def _resolve_room_size(self, observed: str) -> str:
+        """방 크기 확정 로직 — 초반 ROOM_LOCK_AFTER회 다수결 후 고정.
+
+        확정 이후에는 VLM이 뭐라 답하든 무시하고 고정값을 사용해,
+        호출마다 small↔medium이 흔들려 열 시뮬레이션이 출렁이는 것을 막는다.
+        """
+        if self._room_locked is not None:
+            return self._room_locked
+        if observed in self.ROOM_SIZE_MAP:
+            self._room_votes.append(observed)
+        if len(self._room_votes) >= self.ROOM_LOCK_AFTER:
+            self._room_locked = max(set(self._room_votes), key=self._room_votes.count)
+            print(f"[VLM] 방 크기 확정: {self._room_locked} "
+                  f"({self.ROOM_SIZE_MAP.get(self._room_locked)}m²) — 이후 재질의 안 함")
+            return self._room_locked
+        return observed if observed in self.ROOM_SIZE_MAP else 'medium'
+
+    @property
+    def room_locked(self):
+        """확정된 방 크기(없으면 None) — 대시보드/디버깅용"""
+        return self._room_locked
 
     @staticmethod
     def _find_lcpp_model():
@@ -183,9 +210,15 @@ class VLMProcessor:
             return "cuda", torch.float16
         return "cpu", torch.float16
 
+    # 방 크기는 변하지 않으므로 초반 N회만 관측해 다수결로 확정하고 이후 고정한다.
+    # (매번 재질의하면 출력 토큰 낭비 + 답이 흔들려 열 시뮬레이션이 출렁임)
+    ROOM_LOCK_AFTER = 3
+
     def __init__(self):
         self.device, self.dtype = self._select_device()
         self.model_id = "Qwen/Qwen2-VL-2B-Instruct"
+        self._room_votes  = []      # 확정 전 관측값 누적
+        self._room_locked = None    # 확정된 room_size ('small'|'medium'|'large')
 
         chip = platform.processor() or platform.machine()
         print(f"🚀 [VLM] {self.device.upper()} ({chip}) 모드로 초기화 중...")
@@ -347,7 +380,11 @@ class VLMProcessor:
             "  sweater = long sleeves plus a sweater, hoodie or cardigan\n"
             "  jacket = wearing a jacket, coat or padded outerwear\n"
             "activity: lying, sitting, standing, walking, cooking, exercising\n"
-            "room_size: small, medium, large\n"
+            "room_size: small(personal room/office cubicle, ~15m2) | "
+            "medium(classroom/meeting room/living room, ~30m2) | "
+            "large(hall/lecture room/open office, 60m2+). "
+            "Judge by visible floor area and furniture count; "
+            "if unsure choose medium.\n"
             "heat_source: yes or no (stove, heater, oven, open flame)\n"
             "Answer in JSON."
         )
@@ -423,7 +460,11 @@ class VLMProcessor:
             '{"clothing":"___","activity":"___","room_size":"___","heat_source":"___"}\n'
             "clothing: sleeveless, short_sleeve, long_sleeve, sweater, jacket\n"
             "activity: lying, sitting, standing, walking, cooking, exercising\n"
-            "room_size: small, medium, large\n"
+            "room_size: small(personal room/office cubicle, ~15m2) | "
+            "medium(classroom/meeting room/living room, ~30m2) | "
+            "large(hall/lecture room/open office, 60m2+). "
+            "Judge by visible floor area and furniture count; "
+            "if unsure choose medium.\n"
             "heat_source: yes or no"
         )
 
@@ -486,7 +527,11 @@ class VLMProcessor:
             "Fill in the JSON. Output ONLY the JSON, no other text.\n"
             "clothing: sleeveless, short_sleeve, long_sleeve, sweater, jacket\n"
             "activity: lying, sitting, standing, walking, cooking, exercising\n"
-            "room_size: small, medium, large\n"
+            "room_size: small(personal room/office cubicle, ~15m2) | "
+            "medium(classroom/meeting room/living room, ~30m2) | "
+            "large(hall/lecture room/open office, 60m2+). "
+            "Judge by visible floor area and furniture count; "
+            "if unsure choose medium.\n"
             "heat_source: yes or no\n"
             '{"clothing":"'
         )
@@ -641,7 +686,7 @@ class VLMProcessor:
 
             activity     = data.get('activity', 'standing')
             met          = self.MET_MAP.get(activity, self.MET_DEFAULT)
-            room_size    = data.get('room_size', 'medium')
+            room_size    = self._resolve_room_size(data.get('room_size', 'medium'))
             room_size_m2 = self.ROOM_SIZE_MAP.get(room_size, 30.0)
 
             return {
