@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Smart HVAC (VLM)
+Name[ko]=스마트 HVAC (VLM)
+Comment=VLM-based intelligent HVAC control
+Comment[ko]=VLM 기반 지능형 공조 제어 시스템
+Exec=__PROJECT__/run.sh
+Path=__PROJECT__
+Icon=__PROJECT__/deploy/hvac-icon.svg
+Terminal=true
+Categories=Science;
+StartupNotify=true

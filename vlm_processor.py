@@ -3,7 +3,6 @@ import base64
 import glob
 import os
 import time
-import torch
 import json
 import re
 import platform
@@ -12,8 +11,31 @@ import tempfile
 import cv2
 import requests
 from PIL import Image
-from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
-from qwen_vl_utils import process_vision_info
+try:
+    import torch
+    from transformers import Qwen2VLForConditionalGeneration, AutoProcessor
+    from qwen_vl_utils import process_vision_info
+except ImportError:
+    torch = None  # Jetson lcpp 경로는 torch 불필요 (HF 백엔드만 사용)
+
+
+# llama.cpp 설치 위치.
+#   Jetson/리눅스 : ~/llama.cpp (소스 빌드)
+#   배포 패키지   : LCPP_HOME 환경변수로 동봉 폴더 지정 (Windows .exe 등)
+_LCPP_HOME = os.environ.get("LCPP_HOME") or os.path.expanduser("~/llama.cpp")
+_EXE = ".exe" if os.name == "nt" else ""
+
+
+def _lcpp_path(*names, subdir=("build", "bin")):
+    """빌드/릴리스/평평한 배포 폴더 순으로 탐색. 못 찾으면 첫 후보를 반환."""
+    for d in (os.path.join(_LCPP_HOME, *subdir),   # 소스 빌드
+              os.path.join(_LCPP_HOME, "bin"),     # 공식 릴리스 zip
+              _LCPP_HOME):                         # 평평한 배포 폴더
+        for n in names:
+            p = os.path.join(d, n)
+            if os.path.exists(p):
+                return p
+    return os.path.join(_LCPP_HOME, *subdir, names[0])
 
 
 class VLMProcessor:
@@ -48,12 +70,15 @@ class VLMProcessor:
     ※ 인원 수(people)는 YOLODetector가 전담 — VLM 프롬프트에서 제거됨.
     """
 
-    # llama.cpp CUDA INT4 경로 (Jetson: ~/llama.cpp/build)
-    LCPP_BIN    = os.path.expanduser("~/llama.cpp/build/bin/llama-mtmd-cli")
-    LCPP_SERVER = os.path.expanduser("~/llama.cpp/build/bin/llama-server")
-    LCPP_LIB    = os.path.expanduser("~/llama.cpp/build/ggml/src/ggml-cuda/libggml-cuda.so")
-    LCPP_LIB2   = os.path.expanduser("~/llama.cpp/build/bin/libggml-cuda.so")
-    LCPP_MODELS = os.path.expanduser("~/llama.cpp/models")
+    # llama.cpp 경로.
+    #   Jetson/리눅스 : ~/llama.cpp/build (소스 빌드)
+    #   배포 패키지   : LCPP_HOME 환경변수로 동봉 폴더를 지정 (Windows .exe 등)
+    LCPP_BIN    = _lcpp_path("llama-mtmd-cli" + _EXE)
+    LCPP_SERVER = _lcpp_path("llama-server" + _EXE)
+    # CUDA 백엔드 공유 라이브러리 (있으면 GPU, 없으면 CPU로 동작)
+    LCPP_LIB    = _lcpp_path("libggml-cuda.so", subdir=("build", "ggml", "src", "ggml-cuda"))
+    LCPP_LIB2   = _lcpp_path("libggml-cuda.so", "ggml-cuda.dll")
+    LCPP_MODELS = os.environ.get("LCPP_MODELS") or os.path.join(_LCPP_HOME, "models")
     LCPP_NGL    = 99      # GPU에 오프로드할 레이어 수 (99 = 전체)
     LCPP_PORT   = 8090    # llama-server 포트 (127.0.0.1 전용)
     LCPP_SERVER_BOOT_SEC = 180  # 서버 기동(모델 로드) 대기 한도
@@ -121,6 +146,31 @@ class VLMProcessor:
     MET_DEFAULT = 1.2   # 분류 불가 시 기립 수준
     TR_HEAT_OFFSET = 4.0  # 열원 감지 시 복사온도 보정값 (°C)
 
+    def _smooth(self, clo_obs: float, met_obs: float):
+        """clo/met 관측값에 중앙값 필터 + 변화율 제한을 적용한다.
+
+        Returns:
+            (clo, met) — 평활된 값
+        """
+        import statistics
+        self._clo_hist.append(clo_obs)
+        self._met_hist.append(met_obs)
+        if len(self._clo_hist) > self.SMOOTH_WINDOW:
+            self._clo_hist.pop(0)
+            self._met_hist.pop(0)
+
+        clo_med = statistics.median(self._clo_hist)
+        met_med = statistics.median(self._met_hist)
+
+        if self._clo_smooth is None:          # 첫 관측은 그대로 채택
+            self._clo_smooth, self._met_smooth = clo_med, met_med
+        else:                                  # 이후는 변화율 제한
+            self._clo_smooth += max(-self.CLO_MAX_STEP, min(self.CLO_MAX_STEP,
+                                    clo_med - self._clo_smooth))
+            self._met_smooth += max(-self.MET_MAX_STEP, min(self.MET_MAX_STEP,
+                                    met_med - self._met_smooth))
+        return round(self._clo_smooth, 2), round(self._met_smooth, 2)
+
     def _resolve_room_size(self, observed: str) -> str:
         """방 크기 확정 로직 — 초반 ROOM_LOCK_AFTER회 다수결 후 고정.
 
@@ -183,15 +233,19 @@ class VLMProcessor:
 
     @staticmethod
     def _lcpp_cuda_available() -> bool:
-        """llama.cpp CUDA 백엔드 실행 가능 여부 확인."""
-        cuda_lib = (os.path.exists(VLMProcessor.LCPP_LIB) or
-                    os.path.exists(VLMProcessor.LCPP_LIB2))
-        if not cuda_lib:
-            return False
+        """llama.cpp 백엔드 실행 가능 여부 — 바이너리 + GGUF 모델이 있으면 된다.
+        CUDA 라이브러리는 가속용일 뿐 필수가 아니다(없으면 CPU로 동작).
+        GPU 없는 Windows PC에서도 이 경로를 쓰므로 CUDA를 요구하면 안 된다."""
         has_bin = (os.path.exists(VLMProcessor.LCPP_BIN) or
                    os.path.exists(VLMProcessor.LCPP_SERVER))
-        gguf, mmproj = VLMProcessor._find_lcpp_model()
+        gguf, _ = VLMProcessor._find_lcpp_model()
         return has_bin and gguf is not None
+
+    @staticmethod
+    def _lcpp_has_cuda() -> bool:
+        """llama.cpp가 CUDA 가속으로 빌드되었는지 (GPU 오프로드 레이어 결정용)."""
+        return (os.path.exists(VLMProcessor.LCPP_LIB) or
+                os.path.exists(VLMProcessor.LCPP_LIB2))
 
     @staticmethod
     def _select_device():
@@ -203,7 +257,10 @@ class VLMProcessor:
           - CPU 전용 또는 그 외:                         'cpu',  float16
         """
         if VLMProcessor._lcpp_cuda_available():
-            return "lcpp", torch.float16
+            return "lcpp", "float16"
+        if torch is None:
+            raise RuntimeError("torch 미설치 — ~/llama.cpp 빌드 + GGUF 모델(lcpp) 또는 "
+                               "requirements_jetson.txt 설치가 필요")
         if torch.backends.mps.is_available():
             return "mps", torch.float16
         if torch.cuda.is_available():
@@ -214,32 +271,49 @@ class VLMProcessor:
     # (매번 재질의하면 출력 토큰 낭비 + 답이 흔들려 열 시뮬레이션이 출렁임)
     ROOM_LOCK_AFTER = 3
 
+    # ── VLM 결과 평활 ───────────────────────────────────────────────────────
+    # VLM은 같은 장면을 연속 분석해도 가끔 다르게 읽는다(착석을 lying으로,
+    # 반팔을 민소매로 등). 한 번의 오인식이 그대로 PMV에 들어가면
+    # 실내온도가 그대로인데 PMV만 -0.2 → -2.76 으로 튀어 제어를 흔든다.
+    # 최근 관측의 중앙값을 쓰고(단발 이상치 제거) 변화율도 제한한다.
+    # 실제로 옷을 갈아입거나 자세를 바꾸면 여러 번 연속 관측되므로
+    # 몇 주기 안에 정상 반영된다.
+    SMOOTH_WINDOW = 5      # 중앙값 필터 창 크기 (VLM 호출 횟수)
+    CLO_MAX_STEP  = 0.20   # 1회 갱신당 clo 최대 변화폭
+    MET_MAX_STEP  = 0.30   # 1회 갱신당 met 최대 변화폭
+
     def __init__(self):
         self.device, self.dtype = self._select_device()
         self.model_id = "Qwen/Qwen2-VL-2B-Instruct"
         self._room_votes  = []      # 확정 전 관측값 누적
         self._room_locked = None    # 확정된 room_size ('small'|'medium'|'large')
+        self._clo_hist    = []      # 최근 clo 관측 (중앙값 필터용)
+        self._met_hist    = []      # 최근 met 관측
+        self._clo_smooth  = None    # 평활 후 값 (변화율 제한 기준)
+        self._met_smooth  = None
 
         chip = platform.processor() or platform.machine()
         print(f"🚀 [VLM] {self.device.upper()} ({chip}) 모드로 초기화 중...")
 
         try:
             if self.device == "lcpp":
-                # llama.cpp CUDA INT4 — Jetson에서 GPU 직접 추론
-                # libggml-cuda.so 위치를 LD_LIBRARY_PATH에 추가하여 동적 로드
+                # llama.cpp INT4 — GPU(CUDA) 있으면 오프로드, 없으면 CPU
+                # 공유 라이브러리 위치를 탐색 경로에 추가하여 동적 로드
+                self._lcpp_cuda = self._lcpp_has_cuda()
                 lib_dir = os.path.dirname(self.LCPP_LIB if os.path.exists(self.LCPP_LIB)
                                           else self.LCPP_LIB2)
                 bin_dir = os.path.dirname(self.LCPP_BIN)
-                self._lcpp_lib_dir = f"{lib_dir}:{bin_dir}"
+                self._lcpp_lib_dir = os.pathsep.join((lib_dir, bin_dir))
                 self._lcpp_gguf, self._lcpp_mmproj = self._find_lcpp_model()
                 self.model     = None  # llama.cpp 방식 — HF 모델 객체 없음
                 self.processor = None
                 self._server_proc = None
 
-                print(f"✅ [VLM] llama.cpp CUDA INT4 준비 완료")
+                print(f"✅ [VLM] llama.cpp INT4 준비 완료 "
+                      f"({'CUDA 가속' if self._lcpp_cuda else 'CPU'})")
                 print(f"   모델: {self._lcpp_gguf}")
                 print(f"   mmproj: {self._lcpp_mmproj}")
-                print(f"   GPU 레이어: {self.LCPP_NGL}")
+                print(f"   GPU 레이어: {self.LCPP_NGL if self._lcpp_cuda else 0}")
 
                 # llama-server 상주 프로세스 기동 시도 (모델 1회 로드 → 추론 수 초)
                 # 실패하면 기존 llama-mtmd-cli subprocess 방식으로 폴백
@@ -294,12 +368,16 @@ class VLMProcessor:
 
     def _lcpp_env(self) -> dict:
         env = os.environ.copy()
-        env["LD_LIBRARY_PATH"] = (
-            self._lcpp_lib_dir + ":" + env.get("LD_LIBRARY_PATH", "")
-        )
+        # Windows는 DLL을 PATH에서, 리눅스는 LD_LIBRARY_PATH에서 찾는다
+        key = "PATH" if os.name == "nt" else "LD_LIBRARY_PATH"
+        env[key] = self._lcpp_lib_dir + os.pathsep + env.get(key, "")
         # Jetson 통합 메모리에서 CUDA VMM이 OOM을 유발 → cudaMalloc 방식으로 강제
         env["GGML_CUDA_NO_VMM"] = "1"
         return env
+
+    def _ngl(self) -> str:
+        """GPU 오프로드 레이어 수 — CUDA 빌드가 아니면 0(CPU)."""
+        return str(self.LCPP_NGL if getattr(self, "_lcpp_cuda", False) else 0)
 
     def _start_lcpp_server(self):
         """llama-server를 백그라운드로 띄우고 /health 응답까지 대기."""
@@ -307,7 +385,7 @@ class VLMProcessor:
             self.LCPP_SERVER,
             "-m",       self._lcpp_gguf,
             "--mmproj", self._lcpp_mmproj,
-            "-ngl",     str(self.LCPP_NGL),
+            "-ngl",     self._ngl(),
             "--host",   "127.0.0.1",
             "--port",   str(self.LCPP_PORT),
             "--no-warmup",   # warmup이 최대 해상도로 OOM 유발
@@ -552,7 +630,7 @@ class VLMProcessor:
                 self.LCPP_BIN,
                 "-m",      self._lcpp_gguf,
                 "--mmproj", self._lcpp_mmproj,
-                "-ngl",    str(self.LCPP_NGL),
+                "-ngl",    self._ngl(),
                 "--image", tmp_img,
                 "-p",      prompt,
                 "-n",      "80",
@@ -686,6 +764,7 @@ class VLMProcessor:
 
             activity     = data.get('activity', 'standing')
             met          = self.MET_MAP.get(activity, self.MET_DEFAULT)
+            clo, met     = self._smooth(clo, met)      # 단발 오인식 제거
             room_size    = self._resolve_room_size(data.get('room_size', 'medium'))
             room_size_m2 = self.ROOM_SIZE_MAP.get(room_size, 30.0)
 

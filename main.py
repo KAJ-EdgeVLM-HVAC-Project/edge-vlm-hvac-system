@@ -328,7 +328,9 @@ def process_vlm_result(vlm_data, people_count, count_source,
         state=sm.state.value, outdoor_temp=out_temp, clo=vlm_data["clo"])
 
     if power is False:
-        hvac.set_control(power=False, target=hvac.target_temp, fan=1)
+        _fo = (mode == "fan_only")
+        hvac.set_control(power=False, target=hvac.target_temp,
+                         fan=(fan_speed if _fo else 1), fan_only=_fo)
         target_temp = hvac.target_temp
         fan_speed   = hvac.fan_speed
     elif power is True:
@@ -386,8 +388,11 @@ def main(analysis_interval: int = 30):
     if HEADLESS:
         # 디스플레이 없음 — 선택 화면 생략, 기본 프로파일로 카메라 모드 구동
         print("[Headless] DISPLAY 없음 — office 프로파일 / 카메라 모드로 시작")
+        from startup_screen import list_cameras
+        _cams = list_cameras()
         startup = StartupResult(mode='camera', video_path=None,
-                                profile=PROFILES['office'])
+                                profile=PROFILES['office'],
+                                camera_index=_cams[0][0] if _cams else 0)
     else:
         startup = show_and_select()
 
@@ -470,6 +475,8 @@ def main(analysis_interval: int = 30):
     # macOS: CAP_AVFOUNDATION 백엔드 사용 (권한 안정성)
     # Jetson CSI 카메라: nvarguscamerasrc GStreamer 파이프라인
     # Linux 일반: 기본 백엔드
+    stereo_sbs = False   # 좌우 스테레오 side-by-side 카메라(ZED) → 좌안만 사용
+    cam_idx = startup.camera_index
     if platform.system() == "Darwin":
         import subprocess, re as _re
         cap = None
@@ -506,11 +513,21 @@ def main(analysis_interval: int = 30):
         # 2) CSI 미연결 시 USB(v4l2) 카메라로 폴백 (/dev/video0)
         if not cap.isOpened():
             print("[카메라] CSI 없음 → USB(v4l2) 카메라로 폴백")
-            cap = cv2.VideoCapture(0, cv2.CAP_V4L2)
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+            cap = cv2.VideoCapture(cam_idx, cv2.CAP_V4L2)
+            # ZED 2 스테레오(좌우 나란히 2560×720 고정) — 640×480 불가, 좌안만 사용
+            try:
+                stereo_sbs = "ZED" in open(
+                    f"/sys/class/video4linux/video{cam_idx}/name").read()
+            except OSError:
+                stereo_sbs = False
+            if stereo_sbs:
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 2560)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+            else:
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     else:
-        cap = cv2.VideoCapture(0)
+        cap = cv2.VideoCapture(cam_idx)
         cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     if not cap.isOpened():
@@ -646,10 +663,13 @@ def main(analysis_interval: int = 30):
                 print("카메라 프레임을 읽을 수 없습니다. 시뮬레이션으로 전환합니다.")
                 use_camera = False
                 frame = dummy_frame.copy()
-            # 일부 USB 카메라는 해상도 설정을 무시하고 초고해상도(예: 8MP)로 캡처 →
-            # 1280 초과 시만 1280×720으로 축소 (720p CSI 캡처는 그대로 통과)
-            elif frame.shape[1] > 1280:
-                frame = cv2.resize(frame, (1280, 720))
+            else:
+                if stereo_sbs:
+                    frame = frame[:, :frame.shape[1] // 2]
+                # 일부 USB 카메라는 해상도 설정을 무시하고 초고해상도(예: 8MP)로 캡처 →
+                # 1280 초과 시만 1280×720으로 축소 (720p CSI 캡처는 그대로 통과)
+                if frame.shape[1] > 1280:
+                    frame = cv2.resize(frame, (1280, 720))
         else:
             frame = dummy_frame.copy()
 
@@ -711,7 +731,7 @@ def main(analysis_interval: int = 30):
             tr_c    = s_temp + (VLMProcessor.TR_HEAT_OFFSET if heat_src == "yes" else 0.0)
             # 기류: 가동 중이면 팬속도에 따른 실제 기류를 반영 (정지공기 고정 시
             # 냉방 중에도 덥게 평가되어 조기 정지·재가동이 반복됨)
-            vel_now = engine.air_velocity(hvac.is_on, hvac.fan_speed)
+            vel_now = engine.air_velocity(hvac.is_on, hvac.fan_speed, hvac.fan_only)
             # 다인: 사람별로 PMV를 각각 계산해 중앙값으로 제어.
             # (clo/met을 평균내면 코트+반팔 같은 극단에서 아무도 만족 못 함)
             _people = occ_tracker.person_states()
@@ -758,7 +778,9 @@ def main(analysis_interval: int = 30):
             if power is True:
                 hvac.set_control(power=True, target=tgt, fan=fan, mode=mode)
             elif power is False:
-                hvac.set_control(power=False, target=hvac.target_temp, fan=1)
+                _fo = (mode == "fan_only")      # 압축기만 정지, 송풍 유지
+                hvac.set_control(power=False, target=hvac.target_temp,
+                                 fan=(fan if _fo else 1), fan_only=_fo)
 
         # ── 수동 제어 즉시 적용 ───────────────────────────────────────────────
         if manual_ctrl["enabled"]:
@@ -1232,8 +1254,17 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                 ai_tr = hvac_ai.indoor_temp + (
                     VLMProcessor.TR_HEAT_OFFSET if heat_src == "yes" else 0.0)
                 adapt_off = engine.adaptive_pmv_offset(out_temp)
+                # PMV는 '직전 구간의 공조 상태'로 계산된다. 아래 decide_control이
+                # 상태를 바꾸므로, 로그 정합성을 위해 계산에 쓴 상태를 함께 보관한다.
+                # (보관하지 않으면 CSV에서 PMV를 재계산해도 값이 맞지 않는다)
+                meas_on   = hvac_ai.is_on
+                meas_fan  = hvac_ai.fan_speed
+                meas_fo   = hvac_ai.fan_only
+                meas_tgt  = hvac_ai.target_temp
+                meas_mode = hvac_ai.mode
                 if people_count > 0:
-                    ai_vel = engine.air_velocity(hvac_ai.is_on, hvac_ai.fan_speed)
+                    ai_vel = engine.air_velocity(hvac_ai.is_on, hvac_ai.fan_speed,
+                                                hvac_ai.fan_only)
                     ai_pmv = engine.calculate_pmv(hvac_ai.indoor_temp, ai_tr,
                                                   hvac_ai.indoor_humid, ai_vel,
                                                   ai_met, ai_clo) - adapt_off
@@ -1255,9 +1286,14 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                 if ai_power is True:
                     hvac_ai.set_control(power=True, target=ai_tgt, fan=ai_fan, mode=ai_mode)
                 elif ai_power is False:
-                    hvac_ai.set_control(power=False, target=hvac_ai.target_temp, fan=1)
+                    # mode=='fan_only' → 압축기만 정지, 송풍 유지 (재실 중)
+                    _fo = (ai_mode == "fan_only")
+                    hvac_ai.set_control(power=False, target=hvac_ai.target_temp,
+                                        fan=(ai_fan if _fo else 1), fan_only=_fo)
 
                 # 룰베이스: PMV는 실제 재실자 기준, 제어만 고정 24°C/Fan2
+                rmeas_on, rmeas_fan = hvac_rb.is_on, hvac_rb.fan_speed
+                rmeas_tgt = hvac_rb.target_temp
                 if people_count > 0:
                     rb_vel = engine.air_velocity(hvac_rb.is_on, hvac_rb.fan_speed)
                     rb_pmv = engine.calculate_pmv(hvac_rb.indoor_temp, hvac_rb.indoor_temp,
@@ -1284,7 +1320,8 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
             energy_ai_wh += hvac_watts(hvac_ai.is_on, hvac_ai.indoor_temp,
                                        hvac_ai.target_temp, hvac_ai.fan_speed,
                                        hvac_ai.mode, hvac_ai.room_size,
-                                       out_temp, people_count) * dt_h
+                                       out_temp, people_count,
+                                       fan_only=hvac_ai.fan_only) * dt_h
             energy_rb_wh += hvac_watts(hvac_rb.is_on, hvac_rb.indoor_temp,
                                        hvac_rb.target_temp, hvac_rb.fan_speed,
                                        hvac_rb.mode, hvac_rb.room_size,
@@ -1381,10 +1418,10 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                     "ai_met":          ai_met,
                     "ai_pmv":          ai_pmv,
                     "ai_comfort_status": ai_comfort,
-                    "ai_hvac_on":      hvac_ai.is_on,
-                    "ai_target_temp":  hvac_ai.target_temp,
-                    "ai_fan_speed":    hvac_ai.fan_speed,
-                    "ai_mode":         hvac_ai.mode,
+                    "ai_hvac_on":      meas_on,
+                    "ai_target_temp":  meas_tgt,
+                    "ai_fan_speed":    meas_fan,
+                    "ai_mode":         meas_mode,
                     "ai_indoor_temp":  round(hvac_ai.indoor_temp, 2),
                     "ai_indoor_humid": round(hvac_ai.indoor_humid, 1),
                     "ai_energy_wh":    round(energy_ai_wh, 4),
@@ -1393,7 +1430,7 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
                     "rb_pmv":          rb_pmv,
                     "rb_comfort_status": rb_comfort,
                     "rb_hvac_on":      people_count > 0,
-                    "rb_target_temp":  hvac_rb.target_temp,
+                    "rb_target_temp":  rmeas_tgt,
                     "rb_fan_speed":    RB_FAN if people_count > 0 else 0,
                     "rb_indoor_temp":  round(hvac_rb.indoor_temp, 2),
                     "rb_indoor_humid": round(hvac_rb.indoor_humid, 1),
@@ -1436,7 +1473,8 @@ def video_mode(video_path: str, analysis_interval: int, output_dir: str,
         print("[Report] 데이터 부족 — 최소 2개 로그 행 필요")
 
 
-if __name__ == "__main__":
+def cli(argv=None):
+    """명령행 진입점. 배포 패키지(Windows .exe 등)도 이 함수를 호출한다."""
     parser = argparse.ArgumentParser(
         description="VLM 기반 지능형 HVAC 제어 시스템",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -1477,7 +1515,7 @@ if __name__ == "__main__":
         "--indoor-humid", type=float, default=50.0,
         help="영상 분석 시 초기 실내습도 %% (기본 50.0)",
     )
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     if args.video:
         if args.output is None:
@@ -1494,3 +1532,7 @@ if __name__ == "__main__":
         )
     else:
         main(analysis_interval=args.interval)
+
+
+if __name__ == "__main__":
+    cli()
