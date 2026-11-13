@@ -60,7 +60,7 @@ Camera frame
 | `state_machine.py` | Occupancy state transitions with departure/lunch detection |
 | `hvac_simulator.py` | Physical indoor environment simulation |
 | `energy_monitor.py` | AI vs rule-based baseline energy comparison (live mode) |
-| `yolo_detector.py` | YOLO26s people detection (Jetson: torch-free TensorRT 엔진) |
+| `yolo_detector.py` | YOLO26s people detection (Jetson: TensorRT 엔진, 그 외: ONNX Runtime, 최후: ultralytics) |
 | `occupancy_tracker.py` | 재실 인원 추적 — 이동예측 + 헝가리안 매칭, 출입구 자동 학습 |
 | `startup_screen.py` | Environment profile selector (shown on launch) |
 | `dashboard.py` | Operator OpenCV window rendering |
@@ -147,6 +147,14 @@ cmake -B build -DGGML_CUDA=ON -DGGML_CUDA_FA=ON -DCMAKE_CUDA_ARCHITECTURES=87 \
 cmake --build build --config Release -j4
 ```
 `llama-server` 타깃도 함께 빌드됨 (`build/bin/llama-server`) — 상주 추론에 필요.
+
+## Paper Reproduction & Packaging
+
+- 논문(한국멀티미디어학회 논문지 29권 10호) Table 9 재현:
+  `python report_multi.py docs/experiment/analysis_log_6h.csv out/`
+- 새 보드 설치: `deploy/setup.sh` / Windows 무설치 패키지: `deploy/windows/make_portable.py`
+  + `audit_package.py`로 DLL·임포트 정적 검증
+- 데모판(VLM 사전분석 재생) 소스는 저장소에 넣지 않는다.
 
 ## Branches
 

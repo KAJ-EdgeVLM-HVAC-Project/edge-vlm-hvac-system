@@ -30,15 +30,17 @@ pillow
 
 # 데이터
 pandas
-numpy
+# numpy 2.x는 시스템 cv2/tensorrt(numpy 1.x 빌드)와 ABI가 맞지 않아 임포트가 깨진다
+numpy<2
 matplotlib
 
 # 통신 (날씨 API + llama-server HTTP)
 requests
 python-dotenv
 
-# YOLO (인원 감지)
-ultralytics
+# YOLO 폴백 경로. 주 경로는 TensorRT 엔진(torch 불필요)이라 여기 두지 않는다 —
+# ultralytics를 의존성까지 설치하면 opencv-python(Qt)과 numpy 2.x를 끌어와
+# 시스템 GTK cv2를 가려 창이 죽는다. 필요하면 deploy/setup.sh 가 --no-deps로 설치.
 
 # YouTube 영상 분석 모드
 yt-dlp

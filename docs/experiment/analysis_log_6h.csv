@@ -1,0 +1,964 @@
+video_time_sec,frame_number,vlm_activity,vlm_sleeves,vlm_outerwear,vlm_room_size,vlm_heat_source,vlm_raw,outdoor_temp,outdoor_humid,people_count,ai_clo,ai_met,ai_pmv,ai_comfort_status,ai_hvac_on,ai_target_temp,ai_fan_speed,ai_mode,ai_indoor_temp,ai_indoor_humid,ai_energy_wh,rb_clo,rb_met,rb_pmv,rb_comfort_status,rb_hvac_on,rb_target_temp,rb_fan_speed,rb_indoor_temp,rb_indoor_humid,rb_energy_wh
+0.03,1,-,-,-,-,-,,32.0,60.0,0,0.5,1.2,,-,False,24.0,1,cool,30.0,80.0,0.0,0.5,1.2,,-,False,24.0,0,30.0,80.0,0.0
+30.07,902,-,-,-,-,-,,32.0,60.0,0,0.5,1.2,,-,False,24.0,1,cool,30.02,80.0,0.0,0.5,1.2,,-,False,24.0,0,30.02,80.0,0.0
+60.13,1804,standing,short,no,large,no,"{
+  ""clothing"": ""sleeveless"",
+  ""activity"": ""standing"",
+  ""room_size"": ""large"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.35,1.4,1.08,조금 더움 (Slightly Warm),True,20.0,3,cool,29.45,77.8,9.0971,0.35,1.4,1.25,조금 더움 (Slightly Warm),True,24.0,2,29.66,77.8,8.8194
+90.2,2706,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,1.01,조금 더움 (Slightly Warm),True,20.0,3,cool,28.18,75.1,20.0379,0.5,1.2,1.32,조금 더움 (Slightly Warm),True,24.0,2,28.83,75.1,19.4261
+120.27,3608,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.53,조금 더움 (Slightly Warm),True,22.0,3,cool,26.77,72.4,30.9788,0.5,1.2,1.01,조금 더움 (Slightly Warm),True,24.0,2,27.92,72.4,30.0328
+150.3,4509,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""small"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.75,조금 더움 (Slightly Warm),True,22.0,3,cool,25.63,70.1,40.0638,0.5,1.2,0.71,조금 더움 (Slightly Warm),True,24.0,2,27.02,69.6,40.6278
+180.36,5411,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.5800000000000001,조금 더움 (Slightly Warm),True,22.0,3,cool,25.0,68.8,45.5099,0.5,1.2,0.42,쾌적 (Neutral),True,24.0,2,26.12,66.9,51.2346
+210.43,6313,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.47,쾌적 (Neutral),False,22.0,1,cool,24.79,68.2,47.9116,0.5,1.2,0.13999999999999999,쾌적 (Neutral),True,24.0,2,25.23,64.2,61.8413
+240.5,7215,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,24.91,68.2,47.9116,0.5,1.2,-0.14,쾌적 (Neutral),True,24.0,2,24.35,61.5,72.4481
+270.6,8118,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.47,쾌적 (Neutral),False,22.0,1,cool,24.77,67.7,49.7431,0.5,1.2,-0.28,쾌적 (Neutral),True,24.0,2,24.0,58.8,76.7879
+300.66,9020,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,24.89,67.7,49.7431,0.5,1.2,-0.30000000000000004,쾌적 (Neutral),True,24.0,2,24.0,56.1,78.6419
+330.7,9921,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.45999999999999996,쾌적 (Neutral),False,22.0,1,cool,24.76,67.2,51.5989,0.5,1.2,-0.32000000000000006,쾌적 (Neutral),True,24.0,2,24.0,53.4,80.494
+360.76,10823,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,24.88,67.2,51.5989,0.5,1.2,-0.32999999999999996,쾌적 (Neutral),True,24.0,2,24.0,50.7,82.3481
+390.8,11724,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.45999999999999996,쾌적 (Neutral),False,22.0,1,cool,24.75,66.8,53.4305,0.5,1.2,-0.35,쾌적 (Neutral),True,24.0,2,24.0,48.0,84.2001
+420.83,12625,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,24.87,66.8,53.4305,0.5,1.2,-0.37,쾌적 (Neutral),True,24.0,2,24.0,45.3,86.0521
+450.9,13527,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""small"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.44999999999999996,쾌적 (Neutral),False,22.0,1,cool,24.73,66.3,55.2742,0.5,1.2,-0.39,쾌적 (Neutral),True,24.0,2,24.0,42.6,87.9062
+480.93,14428,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""small"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,24.85,66.3,55.2742,0.5,1.2,-0.41000000000000003,쾌적 (Neutral),True,24.0,2,24.0,39.9,89.7582
+510.96,15329,sitting,long,no,medium,no,"{
+  ""clothing"": ""long_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.7,1.2,0.32999999999999996,쾌적 (Neutral),True,24.0,3,cool,24.0,64.0,61.9203,0.7,1.2,0.31,쾌적 (Neutral),True,24.0,2,24.0,37.2,91.6102
+540.99,16230,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.27,쾌적 (Neutral),False,24.0,1,cool,24.11,63.6,62.2001,0.5,1.2,-0.44000000000000006,쾌적 (Neutral),True,24.0,2,24.0,34.5,93.4623
+571.03,17131,lying,short,no,medium,no,"{
+  ""clothing"": ""sleeveless"",
+  ""activity"": ""lying"",
+  ""room_size"": ""small"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.35,0.8,-2.37,추움 (Cool),False,24.0,1,cool,24.23,63.6,62.2001,0.35,0.8,-2.76,매우 추움 (Cold),True,24.0,2,24.0,31.8,95.3143
+601.06,18032,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.33999999999999997,쾌적 (Neutral),False,24.0,1,cool,24.36,63.6,62.2001,0.5,1.2,-0.48,쾌적 (Neutral),True,24.0,2,24.0,29.1,97.1663
+631.13,18934,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.37,쾌적 (Neutral),False,24.0,1,cool,24.48,63.6,62.2001,0.5,1.2,-0.49,쾌적 (Neutral),True,24.0,2,24.0,26.4,99.0204
+661.23,19837,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.4,쾌적 (Neutral),False,24.0,1,cool,24.6,63.6,62.2001,0.5,1.2,-0.51,조금 추움 (Slightly Cool),True,24.0,2,24.0,23.7,100.8765
+691.29,20739,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.43,쾌적 (Neutral),False,24.0,1,cool,24.72,63.6,62.2001,0.5,1.2,-0.53,조금 추움 (Slightly Cool),True,24.0,2,24.0,21.0,102.7306
+721.33,21640,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.45999999999999996,쾌적 (Neutral),False,24.0,1,cool,24.84,63.6,62.2001,0.5,1.2,-0.55,조금 추움 (Slightly Cool),True,24.0,2,24.0,18.3,104.5826
+751.36,22541,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.49,쾌적 (Neutral),False,24.0,1,cool,24.96,63.6,62.2001,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.6,106.4346
+781.39,23442,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.47,쾌적 (Neutral),False,22.0,1,cool,24.91,63.1,63.9875,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,108.2867
+811.49,24345,sitting,long,no,medium,no,"{
+  ""clothing"": ""long_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,2,0.7,1.2,0.6699999999999999,조금 더움 (Slightly Warm),True,22.0,2,cool,24.81,62.5,66.6098,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,110.3341
+841.52,25246,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""large"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,-0.26,쾌적 (Neutral),False,24.0,1,cool,24.06,60.0,75.9213,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,112.7868
+871.62,26149,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""small"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.27999999999999997,쾌적 (Neutral),False,24.0,1,cool,24.24,60.0,75.9213,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,115.2449
+901.66,27050,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""small"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.32999999999999996,쾌적 (Neutral),False,24.0,1,cool,24.43,60.0,75.9213,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,117.6976
+931.69,27951,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""small"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.37,쾌적 (Neutral),False,24.0,1,cool,24.61,60.0,75.9213,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,120.1503
+961.76,28853,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.41000000000000003,쾌적 (Neutral),False,24.0,1,cool,24.76,60.0,75.9213,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,122.303
+991.82,29755,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,1,0.5,1.2,0.44,쾌적 (Neutral),False,24.0,1,cool,24.88,60.0,75.9213,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,124.1571
+1021.89,30657,standing,short,no,medium,no,"{
+  ""clothing"": ""sleeveless"",
+  ""activity"": ""standing"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,2,0.35,1.4,0.10999999999999999,쾌적 (Neutral),False,24.0,1,cool,25.04,60.0,75.9213,0.35,1.4,-0.97,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,126.4105
+1051.92,31558,standing,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""standing"",
+  ""room_size"": ""large"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.4,0.19,쾌적 (Neutral),False,24.0,1,cool,24.54,58.1,83.0591,0.5,1.4,-0.19,쾌적 (Neutral),True,24.0,2,24.0,15.0,128.8445
+1081.96,32459,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,1,0.5,1.2,0.35,쾌적 (Neutral),False,22.0,1,cool,24.55,57.7,84.8582,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,131.2772
+1112.02,33361,standing,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""standing"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.4,0.59,조금 더움 (Slightly Warm),True,22.0,2,cool,24.41,56.8,88.3154,0.5,1.4,-0.19,쾌적 (Neutral),True,24.0,2,24.0,15.0,133.7166
+1142.06,34262,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.3,쾌적 (Neutral),False,22.0,1,cool,24.41,56.3,90.1969,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,136.1692
+1172.15,35165,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""large"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.33999999999999997,쾌적 (Neutral),False,22.0,1,cool,24.6,56.3,90.1969,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,138.6273
+1202.22,36067,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.39,쾌적 (Neutral),False,22.0,1,cool,24.78,56.3,90.1969,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,141.0827
+1232.29,36969,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""large"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.43,쾌적 (Neutral),False,22.0,1,cool,24.96,56.3,90.1969,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,143.5381
+1262.32,37870,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.47,쾌적 (Neutral),False,22.0,1,cool,25.13,56.3,90.1969,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,145.9908
+1292.35,38771,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.01999999999999999,쾌적 (Neutral),False,22.0,1,cool,25.14,55.9,91.9843,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,148.4435
+1322.39,39672,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""large"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.01999999999999999,쾌적 (Neutral),False,22.0,1,cool,25.15,55.4,93.7599,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,150.8962
+1352.42,40573,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.01999999999999999,쾌적 (Neutral),False,22.0,1,cool,25.16,55.0,95.5473,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,153.3488
+1382.52,41476,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}",32.0,60.0,2,0.5,1.2,0.01999999999999999,쾌적 (Neutral),False,22.0,1,cool,25.17,54.5,97.3347,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,155.8069
+1412.65,42380,sitting,short,no,medium,no,"{
+  ""clothing"": ""short_sleeve"",
+  ""activity"": ""sitting"",
+  ""room_size"": ""medium"",
+  ""heat_source"": ""no""
+}
+",32.0,60.0,2,0.5,1.2,0.01999999999999999,쾌적 (Neutral),False,22.0,1,cool,25.18,54.1,99.1221,0.5,1.2,-0.5700000000000001,조금 추움 (Slightly Cool),True,24.0,2,24.0,15.0,158.2678
+1442.69,43281,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.6799999999999999,조금 더움 (Slightly Warm),True,22.0,2,cool,25.12,53.4,101.6621,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,160.7204
+1472.72,44182,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.47,쾌적 (Neutral),True,24.0,2,cool,24.3,50.7,112.257,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,163.1731
+1502.75,45083,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.38,쾌적 (Neutral),True,24.0,2,cool,24.0,48.0,116.6974,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,165.6258
+1532.85,45986,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.36,쾌적 (Neutral),True,24.0,2,cool,24.0,45.3,119.1555,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,168.0839
+1562.92,46888,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.33999999999999997,쾌적 (Neutral),True,24.0,2,cool,24.0,42.6,121.6109,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,170.5393
+1592.95,47789,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.32999999999999996,쾌적 (Neutral),True,24.0,2,cool,24.0,39.9,124.0635,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,172.992
+1622.98,48690,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.31,쾌적 (Neutral),True,24.0,2,cool,24.0,37.2,126.5162,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,175.4446
+1653.02,49591,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.29,쾌적 (Neutral),True,24.0,2,cool,24.0,34.5,128.9689,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,177.8973
+1683.12,50494,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.27,쾌적 (Neutral),True,24.0,2,cool,24.0,31.8,131.427,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,180.3554
+1713.18,51396,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.26,쾌적 (Neutral),True,24.0,2,cool,24.0,29.1,133.8824,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,182.8108
+1743.25,52298,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.24,쾌적 (Neutral),True,24.0,2,cool,24.0,26.4,136.3378,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,185.2662
+1773.28,53199,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.22,쾌적 (Neutral),True,24.0,2,cool,24.0,23.7,138.7905,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,187.7189
+1803.32,54100,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.59,조금 더움 (Slightly Warm),True,22.0,2,cool,23.93,21.4,141.8415,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,190.1716
+1833.35,55001,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.53,조금 더움 (Slightly Warm),True,22.0,2,cool,23.63,20.1,147.0861,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,192.6242
+1863.38,55902,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.59,19.5,149.4732,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,195.0769
+1893.45,56804,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.62,19.0,151.2488,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,197.5323
+1923.48,57705,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.64,18.6,153.048,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,199.985
+1953.55,58607,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.66,18.1,154.8354,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,202.4404
+1983.58,59508,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.68,17.7,156.6227,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,204.893
+2013.61,60409,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.66,17.1,158.8923,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,207.3457
+2043.71,61312,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,16.6,160.5738,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,209.8038
+2073.75,62213,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,16.2,162.2671,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,212.2565
+2103.81,63115,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.8,163.9605,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,214.7119
+2133.85,64016,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.78,15.4,165.6302,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,217.1646
+2163.88,64917,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.81,15.0,167.3353,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,219.6172
+2193.91,65818,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.67,15.0,170.8043,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,222.0699
+2223.98,66720,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,172.6505,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,224.5253
+2254.01,67621,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,174.4378,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,227.206
+2284.11,68524,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,176.2252,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,230.1088
+2314.14,69425,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,179.3884,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,232.5614
+2344.21,70327,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,181.0935,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,235.0168
+2374.24,71228,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,183.3748,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,237.4695
+2404.31,72130,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,185.1504,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,239.9249
+2434.38,73032,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,186.9496,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,242.3803
+2464.41,73933,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,188.737,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,244.833
+2494.48,74835,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,190.5244,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,247.2883
+2524.57,75738,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,192.3,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,249.7465
+2554.61,76639,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.76,15.0,194.6401,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,252.1991
+2584.67,77541,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,197.6151,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,254.6545
+2614.71,78442,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,199.4143,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,257.1072
+2644.74,79343,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,201.1781,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,259.5599
+2674.84,80246,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,202.942,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,262.018
+2704.87,81147,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,204.7059,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,264.4707
+2734.91,82048,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,206.4933,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,266.9233
+2764.94,82949,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,208.3042,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,269.376
+2794.97,83850,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,210.1151,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,271.8287
+2825.01,84751,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,213.3841,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,274.3607
+2855.07,85653,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,215.4773,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,276.8161
+2885.1,86554,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,217.2529,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,279.2687
+2915.17,87456,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,219.0403,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,281.7241
+2945.27,88359,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,220.8394,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,284.1823
+2975.3,89260,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,222.6033,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,286.6349
+3005.37,90162,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,224.3907,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,289.0903
+3035.4,91063,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,226.9659,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,291.543
+3065.5,91966,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,229.7058,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,294.0011
+3095.54,92867,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,231.4932,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,296.4538
+3125.57,93768,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,233.2924,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,298.9065
+3155.6,94669,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,235.0915,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,301.3591
+3185.67,95571,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,236.8671,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,303.8145
+3215.7,96472,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,238.6428,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,306.2672
+3245.77,97374,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,240.6536,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,308.7226
+3275.8,98275,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,243.9814,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,311.5993
+3305.87,99177,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,245.757,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,314.656
+3335.9,100078,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,249.2142,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,317.7093
+3365.97,100980,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,251.1192,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,320.766
+3396.03,101882,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.7,15.0,254.3765,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,323.8227
+3426.1,102784,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,256.4931,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,326.8794
+3456.17,103686,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,259.5388,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,329.9361
+3486.27,104589,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,261.8788,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,332.9962
+3516.36,105492,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,264.7363,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,336.0563
+3546.4,106393,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,267.2175,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,339.1096
+3576.43,107294,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.74,15.0,269.828,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,342.163
+3606.5,108196,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,272.5679,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,345.075
+3636.53,109097,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,274.3435,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,347.5277
+3666.56,109998,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,276.1191,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,349.9803
+3696.6,110899,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,277.8948,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,352.433
+3726.66,111801,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,279.9761,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,354.8884
+3756.7,112702,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,283.2334,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,357.3411
+3786.76,113604,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,285.0326,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,359.7965
+3816.8,114505,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,286.7964,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,362.2492
+3846.86,115407,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,288.5721,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,364.7046
+3876.93,116309,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,290.3359,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,367.1599
+3906.99,117211,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,292.0998,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,369.1834
+3937.09,118114,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,293.8754,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,371.0395
+3967.16,119016,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.67,15.0,295.3218,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,372.8936
+3997.26,119919,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,295.6628,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,374.7497
+4027.33,120821,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,297.4502,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,376.6038
+4057.36,121722,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,299.2494,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,378.4558
+4087.39,122623,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,300.3665,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,380.3078
+4117.46,123525,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,302.0363,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,382.5672
+4147.53,124427,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,304.5998,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,385.0226
+4177.62,125330,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,306.3872,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,387.4808
+4207.66,126231,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,308.1628,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,389.9334
+4237.76,127134,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,309.9384,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,392.3915
+4267.79,128035,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,312.3491,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,395.3775
+4297.82,128936,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,315.2888,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,398.0682
+4327.89,129838,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,317.088,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,400.5236
+4357.96,130740,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,318.8871,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,402.979
+4388.02,131642,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,320.6863,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,405.4344
+4418.06,132543,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,322.4854,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,407.8871
+4448.09,133444,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,324.2846,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,410.3397
+4478.12,134345,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.81,15.0,326.0837,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,412.7924
+4508.15,135246,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,327.8711,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,414.8551
+4538.22,136148,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,329.6585,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,416.7092
+4568.29,137050,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,331.4459,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,418.5632
+4598.32,137951,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,333.2451,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,420.4153
+4628.35,138852,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,334.4562,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,422.2673
+4658.39,139753,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,335.0324,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,424.1193
+4688.42,140654,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,336.8081,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,425.9713
+4718.49,141556,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,338.5837,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,427.8254
+4748.52,142457,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,339.4068,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,429.6774
+4778.55,143358,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,340.3829,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,431.5295
+4808.65,144261,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,342.182,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,433.3856
+4838.72,145163,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,343.9459,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,435.2397
+4868.78,146065,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,345.7333,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,437.0938
+4898.85,146967,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,345.7333,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,438.9478
+4928.88,147868,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,347.5089,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,441.0332
+4958.92,148769,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,349.4962,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,443.4859
+4988.95,149670,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.81,15.0,351.166,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,446.0052
+5018.98,150571,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,354.6585,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,449.0585
+5049.02,151472,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,356.4341,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,451.7259
+5079.05,152373,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,358.2215,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,454.1785
+5109.12,153275,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.67,15.0,361.4435,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,456.6339
+5139.18,154177,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.7,15.0,363.1721,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,459.0893
+5169.28,155080,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,365.3358,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,461.9474
+5199.31,155981,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,367.1231,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,465.0007
+5229.38,156883,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,370.6979,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,467.5955
+5259.45,157785,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,372.4853,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,470.0509
+5289.48,158686,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,374.2727,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,472.5035
+5319.55,159588,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,376.0601,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,474.9589
+5349.58,160489,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,377.8592,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,477.7189
+5379.61,161390,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,381.4223,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,480.7722
+5409.71,162293,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,383.1744,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,483.7177
+5439.75,163194,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,384.9735,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,486.1703
+5469.81,164096,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.79,15.0,386.9138,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,488.6257
+5499.85,164997,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,390.3122,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,491.0784
+5529.88,165898,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,392.0525,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,493.5311
+5559.91,166799,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,393.8869,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,495.9837
+5589.98,167701,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,395.6743,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,498.4391
+5620.04,168603,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,397.4617,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,500.8945
+5650.08,169504,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,399.2374,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,503.3472
+5680.11,170405,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,401.0247,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,505.7999
+5710.14,171306,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,402.8239,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,508.2526
+5740.18,172207,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,405.6578,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,510.7052
+5770.31,173111,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,408.1861,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,513.1661
+5800.38,174013,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,409.9852,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,515.6215
+5830.41,174914,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,411.7726,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,518.0741
+5860.44,175815,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,413.56,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,520.5268
+5890.47,176716,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,415.3121,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,522.9795
+5920.54,177618,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,417.0995,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,525.4349
+5950.57,178519,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,419.2279,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,527.8875
+5980.64,179421,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,422.4381,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,530.3429
+6010.67,180322,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,424.2138,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,532.7956
+6040.77,181225,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,426.0012,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,535.0444
+6070.81,182126,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,426.0012,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,536.8964
+6100.84,183027,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,427.8003,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,538.7485
+6130.87,183928,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,429.5759,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,540.6005
+6160.94,184830,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,431.3633,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,542.8372
+6190.97,185731,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,433.1507,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,545.2899
+6221.04,186633,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,434.9381,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,547.7453
+6251.1,187535,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,436.7255,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,550.2007
+6281.17,188437,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.7,15.0,439.5712,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,552.6561
+6311.2,189338,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,441.2528,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,555.1087
+6341.24,190239,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,442.9226,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,557.4368
+6371.3,191141,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,445.6507,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,560.3168
+6401.37,192043,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,447.4146,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,562.7722
+6431.4,192944,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,449.1784,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,565.2249
+6461.44,193845,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,450.9658,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,567.6775
+6491.5,194747,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.78,15.0,453.106,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,570.1329
+6521.53,195648,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,456.3045,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,572.5856
+6551.57,196549,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.77,15.0,456.3045,0.7,1.2,,-,False,24.0,0,24.01,15.0,574.0766
+6581.63,197451,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.84,15.0,456.3045,0.7,1.2,,-,False,24.0,0,24.08,15.0,574.0766
+6611.7,198353,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.91,15.0,456.3045,0.7,1.2,,-,False,24.0,0,24.14,15.0,574.0766
+6641.73,199254,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.98,15.0,456.3045,0.7,1.2,,-,False,24.0,0,24.21,15.0,574.0766
+6671.77,200155,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.04,15.0,456.3045,0.7,1.2,,-,False,24.0,0,24.27,15.0,574.0766
+6701.87,201058,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.11,15.0,456.3045,0.7,1.2,,-,False,24.0,0,24.34,15.0,574.0766
+6731.9,201959,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.18,15.0,456.3045,0.7,1.2,,-,False,24.0,0,24.4,15.0,574.0766
+6761.93,202860,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,3,cool,23.63,15.0,461.2412,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,578.8917
+6791.97,203761,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,461.8113,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,580.7497
+6822.03,204663,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.79,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.02,15.0,582.0231
+6852.06,205564,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.86,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.08,15.0,582.0231
+6882.1,206465,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.92,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.15,15.0,582.0231
+6912.13,207366,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.99,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.21,15.0,582.0231
+6942.16,208267,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.06,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.28,15.0,582.0231
+6972.26,209170,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.12,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.34,15.0,582.0231
+7002.3,210071,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.19,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.41,15.0,582.0231
+7032.36,210973,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.25,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.47,15.0,582.0231
+7062.4,211874,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.32,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.53,15.0,582.0231
+7092.5,212777,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.38,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.6,15.0,582.0231
+7122.53,213678,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.45,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.66,15.0,582.0231
+7152.6,214580,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.51,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.72,15.0,582.0231
+7182.63,215481,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.57,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.78,15.0,582.0231
+7212.69,216383,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.63,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.84,15.0,582.0231
+7242.76,217285,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.69,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.9,15.0,582.0231
+7272.79,218186,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.75,15.0,461.8113,0.7,1.2,,-,False,24.0,0,24.96,15.0,582.0231
+7302.86,219088,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.81,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.02,15.0,582.0231
+7332.89,219989,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.87,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.07,15.0,582.0231
+7362.93,220890,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.93,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.13,15.0,582.0231
+7392.96,221791,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.99,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.19,15.0,582.0231
+7422.99,222692,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.05,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.24,15.0,582.0231
+7453.06,223594,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.11,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.3,15.0,582.0231
+7483.13,224496,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.17,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.36,15.0,582.0231
+7513.19,225398,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.22,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.41,15.0,582.0231
+7543.22,226299,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.28,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.47,15.0,582.0231
+7573.29,227201,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.33,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.52,15.0,582.0231
+7603.32,228102,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.39,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.57,15.0,582.0231
+7633.42,229005,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.44,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.63,15.0,582.0231
+7663.49,229907,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.5,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.68,15.0,582.0231
+7693.52,230808,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.55,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.73,15.0,582.0231
+7723.56,231709,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.61,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.79,15.0,582.0231
+7753.59,232610,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.66,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.84,15.0,582.0231
+7783.62,233511,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.71,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.89,15.0,582.0231
+7813.66,234412,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.76,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.94,15.0,582.0231
+7843.75,235315,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.82,15.0,461.8113,0.7,1.2,,-,False,24.0,0,25.99,15.0,582.0231
+7873.79,236216,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.87,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.04,15.0,582.0231
+7903.85,237118,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.92,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.09,15.0,582.0231
+7933.89,238019,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.97,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.14,15.0,582.0231
+7963.95,238921,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.02,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.19,15.0,582.0231
+7994.05,239824,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.07,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.24,15.0,582.0231
+8024.15,240727,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.12,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.28,15.0,582.0231
+8054.19,241628,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.17,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.33,15.0,582.0231
+8084.25,242530,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.22,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.38,15.0,582.0231
+8114.32,243432,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.26,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.43,15.0,582.0231
+8144.39,244334,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.31,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.47,15.0,582.0231
+8174.48,245237,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.36,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.52,15.0,582.0231
+8204.52,246138,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.41,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.56,15.0,582.0231
+8234.58,247040,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.45,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.61,15.0,582.0231
+8264.65,247942,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.5,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.65,15.0,582.0231
+8294.75,248845,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.54,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.7,15.0,582.0231
+8324.88,249749,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.59,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.74,15.0,582.0231
+8354.92,250650,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.64,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.79,15.0,582.0231
+8384.98,251552,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.68,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.83,15.0,582.0231
+8415.05,252454,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.72,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.87,15.0,582.0231
+8445.15,253357,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.77,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.91,15.0,582.0231
+8475.22,254259,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.81,15.0,461.8113,0.7,1.2,,-,False,24.0,0,26.96,15.0,582.0231
+8505.25,255160,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.85,15.0,461.8113,0.7,1.2,,-,False,24.0,0,27.0,15.0,582.0231
+8535.28,256061,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.9,15.0,461.8113,0.7,1.2,,-,False,24.0,0,27.04,15.0,582.0231
+8565.31,256962,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,1.06,조금 더움 (Slightly Warm),True,20.0,3,cool,26.83,15.0,462.7695,0.7,1.2,1.08,조금 더움 (Slightly Warm),True,24.0,2,27.02,15.0,582.952
+8595.38,257864,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.36,쾌적 (Neutral),True,24.0,3,cool,25.5,15.0,473.7103,0.7,1.2,0.63,조금 더움 (Slightly Warm),True,24.0,2,26.18,15.0,593.5588
+8625.41,258765,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,24.0,1,cool,24.71,15.0,480.1875,0.7,1.2,,-,False,24.0,0,25.51,15.0,601.6373
+8655.48,259667,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.6799999999999999,조금 더움 (Slightly Warm),True,22.0,3,cool,24.69,15.0,480.8667,0.7,1.2,0.82,조금 더움 (Slightly Warm),True,24.0,2,25.52,15.0,602.2958
+8685.51,260568,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5700000000000001,조금 더움 (Slightly Warm),True,22.0,3,cool,24.07,15.0,486.3007,0.7,1.2,0.3,쾌적 (Neutral),True,24.0,2,24.63,15.0,612.8908
+8715.55,261469,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,489.3938,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,620.0502
+8745.58,262370,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,491.2496,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,621.9023
+8775.65,263272,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,491.2496,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,623.7564
+8805.75,264175,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,493.1054,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,625.6125
+8835.78,265076,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,493.1054,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,627.5198
+8865.81,265977,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,494.937,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,629.9725
+8895.91,266880,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,496.7685,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,632.7173
+8925.94,267781,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.47,쾌적 (Neutral),False,22.0,1,cool,23.63,15.0,498.6122,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,635.17
+8956.01,268683,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,3,cool,23.62,15.0,500.0435,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,637.6254
+8986.04,269584,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,500.4559,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,640.078
+9016.08,270485,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,502.3117,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,642.5307
+9046.11,271386,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.63,15.0,504.1433,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,644.9834
+9076.18,272288,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,3,cool,23.69,15.0,505.053,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,647.4388
+9106.21,273189,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,505.9869,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,650.3348
+9136.24,274090,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,507.8306,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,653.2001
+9166.28,274991,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,509.6864,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,656.2534
+9196.34,275893,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,511.5301,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,659.2028
+9226.41,276795,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,513.3859,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,661.6582
+9256.44,277696,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.63,15.0,515.1932,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,664.1109
+9286.57,278600,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,516.9571,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,666.5717
+9316.64,279502,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,518.7445,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,669.0271
+9346.71,280404,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,520.5319,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,671.4825
+9376.74,281305,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,522.3193,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,673.9352
+9406.77,282206,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,524.0949,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,676.3878
+9436.84,283108,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,525.847,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,678.8432
+9466.87,284009,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,527.6226,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,681.2959
+9496.91,284910,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,529.3865,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,683.7486
+9527.0,285813,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.7,15.0,532.4439,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,686.2067
+9557.07,286715,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,534.7369,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,688.6621
+9587.1,287616,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,536.5361,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,691.1148
+9617.17,288518,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,538.3352,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,693.5701
+9647.2,289419,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,540.1461,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,696.0228
+9677.24,290320,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,541.9335,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,698.4755
+9707.27,291221,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,543.7209,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,701.1775
+9737.34,292123,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,547.2604,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,704.2342
+9767.4,293025,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,549.0478,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,707.2909
+9797.44,293926,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,552.6108,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,709.9836
+9827.47,294827,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,554.3982,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,712.4362
+9857.5,295728,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,556.1738,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,714.8889
+9887.53,296629,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,557.9495,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,717.3416
+9917.6,297531,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,559.7133,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,719.797
+9947.63,298432,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,561.5125,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,722.2497
+9977.73,299335,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,563.2999,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,724.7078
+10007.77,300236,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,566.4749,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,727.1604
+10037.83,301138,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,568.1564,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,729.6158
+10067.87,302039,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,570.4142,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,732.0685
+10097.97,302942,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,572.178,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,734.5266
+10128.0,303843,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,573.9654,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,736.9793
+10158.03,304744,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,575.7411,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,738.8433
+10188.06,305645,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,577.5284,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,740.6954
+10218.13,306547,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,577.5284,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,742.5494
+10248.23,307450,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,579.3041,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,744.4056
+10278.26,308351,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,581.0915,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,746.4069
+10308.33,309253,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,582.8906,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,748.8623
+10338.4,310155,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,584.678,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,751.3177
+10368.46,311057,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,586.4536,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,753.7731
+10398.5,311958,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,588.6173,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,756.2258
+10428.53,312859,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,591.7923,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,758.7278
+10458.56,313760,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,593.5679,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,761.1805
+10488.6,314661,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,595.3671,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,763.6331
+10518.69,315564,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,597.1427,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,766.0912
+10548.73,316465,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,598.9183,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,768.5439
+10578.76,317366,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,600.7057,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,770.7859
+10608.83,318268,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,602.4931,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,772.64
+10638.93,319171,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,604.2687,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,774.6748
+10668.96,320072,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,606.0444,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,777.1275
+10699.03,320974,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,607.8318,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,779.0882
+10729.09,321876,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,609.6309,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,782.0149
+10759.19,322779,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,611.4065,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,784.543
+10789.26,323681,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,613.2057,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,786.6538
+10819.29,324582,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,614.9813,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,788.6865
+10849.32,325483,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,617.6036,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,791.5618
+10879.36,326384,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,619.2969,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,794.0145
+10909.42,327286,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.07999999999999999,쾌적 (Neutral),False,22.0,1,cool,23.64,15.0,622.1309,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,796.2139
+10939.49,328188,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,622.1309,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,798.0679
+10969.52,329089,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,623.9183,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,799.92
+10999.56,329990,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,625.7056,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,801.772
+11029.59,330891,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,627.4813,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,804.104
+11059.62,331792,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,629.2687,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,806.5567
+11089.66,332693,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,631.0678,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,809.0094
+11119.69,333594,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,632.8552,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,811.462
+11149.76,334496,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,634.6661,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,813.9174
+11179.79,335397,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,637.8528,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,816.3701
+11209.89,336300,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,638.2291,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,818.3722
+11239.92,337201,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,640.0165,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,820.2242
+11269.99,338103,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,641.8274,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,822.0783
+11300.05,339005,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,643.6383,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,824.1837
+11330.09,339906,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,645.414,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,826.6364
+11360.12,340807,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,647.2131,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,829.0891
+11390.19,341709,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,649.0005,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,831.5445
+11420.22,342610,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,650.7879,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,833.9971
+11450.25,343511,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.74,15.0,653.128,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,836.4498
+11480.29,344412,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,654.8095,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,838.9025
+11510.35,345314,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,657.9022,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,841.3579
+11540.42,346216,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,659.6896,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,844.1246
+11570.48,347118,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,661.4652,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,846.588
+11600.55,348020,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,663.2526,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,849.0434
+11630.58,348921,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,665.0282,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,851.4961
+11660.65,349823,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.81,15.0,666.8156,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,853.9815
+11690.78,350727,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,670.1552,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,856.4423
+11720.85,351629,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,672.1778,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,858.8977
+11750.88,352530,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,673.9534,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,861.3504
+11780.92,353431,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,675.729,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,863.803
+11810.98,354333,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,677.5282,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,866.2584
+11841.08,355236,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,679.3038,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,868.7165
+11871.15,356138,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,681.0912,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,871.1873
+11901.18,357039,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,684.6542,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,874.2406
+11931.21,357940,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,686.4416,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,876.5126
+11961.25,358841,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,688.2408,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,878.3646
+11991.28,359742,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,690.0046,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,880.592
+12021.35,360644,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,691.792,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,883.1334
+12051.38,361545,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,693.5912,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,885.586
+12081.41,362446,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,695.3786,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,888.0387
+12111.48,363348,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,697.1777,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,890.4941
+12141.51,364249,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,698.9533,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,892.9468
+12171.58,365151,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.79,15.0,700.8583,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,895.4022
+12201.61,366052,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,704.2567,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,897.8548
+12231.64,366953,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,706.0323,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,900.3075
+12261.74,367856,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,707.855,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,902.7656
+12291.78,368757,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,709.6424,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,905.6956
+12321.81,369658,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,713.1819,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,908.9789
+12351.88,370560,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,716.3686,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,912.4703
+12381.91,371461,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,718.5441,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,915.5236
+12411.94,372362,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,721.4956,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,918.8829
+12441.98,373263,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,723.8945,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,921.9363
+12472.01,374164,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,726.6226,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,924.9896
+12502.11,375067,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,729.2331,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,928.0497
+12532.14,375968,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,730.997,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,930.7223
+12562.21,376870,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,733.4899,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,933.1777
+12592.24,377771,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,736.3474,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,935.6304
+12622.34,378674,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,738.1348,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,938.0985
+12652.37,379575,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,739.9104,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,940.5512
+12682.47,380478,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,741.6861,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,943.2246
+12712.54,381380,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,743.6969,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,945.8607
+12742.64,382283,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,747.0365,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,948.7015
+12772.71,383185,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,748.8121,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,951.1569
+12802.77,384087,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,750.623,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,953.6123
+12832.81,384988,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,752.4104,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,956.0649
+12862.9,385891,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,754.1978,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,958.523
+12892.94,386792,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,755.9852,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,960.9757
+12923.0,387694,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,757.7608,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,963.4311
+12953.04,388595,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,760.8182,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,965.8838
+12983.1,389497,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,762.535,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,967.8932
+13013.14,390398,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,763.1347,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,969.7452
+13043.2,391300,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,764.9221,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,971.5993
+13073.27,392202,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,766.7095,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,973.4534
+13103.34,393104,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,768.4851,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,975.8601
+13133.37,394005,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,770.2843,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,978.3128
+13163.4,394906,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,772.0834,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,980.7654
+13193.43,395807,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,773.8591,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,983.2181
+13223.47,396708,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,775.6465,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,985.6708
+13253.5,397609,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.79,15.0,777.6102,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,988.1235
+13283.53,398510,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,781.0086,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,990.6648
+13313.6,399412,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,782.796,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,993.5368
+13343.63,400313,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,784.5834,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,995.9895
+13373.67,401214,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,786.359,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,998.4422
+13403.7,402115,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,788.1229,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1000.9562
+13433.77,403017,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,791.2744,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1003.4116
+13463.83,403919,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,793.4616,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1005.867
+13493.87,404820,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,795.2254,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1008.3197
+13523.93,405722,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,796.954,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1010.7751
+13553.96,406623,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,798.7532,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1013.2277
+13584.0,407524,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,800.5288,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1015.6804
+13614.03,408425,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,802.3162,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1018.1331
+13644.06,409326,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,804.8562,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1020.5857
+13674.13,410228,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.76,15.0,806.526,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1023.0411
+13704.16,411129,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,809.4658,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1025.4938
+13734.2,412030,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,811.2531,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1027.9465
+13764.23,412931,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,813.0405,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1030.3992
+13794.33,413834,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,814.8397,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1032.8573
+13824.4,414736,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,816.6388,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1035.3127
+13854.43,415637,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,818.4145,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1037.5167
+13884.46,416538,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,820.1901,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1039.3687
+13914.49,417439,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,821.9775,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1041.2207
+13944.53,418340,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,823.5062,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1043.4787
+13974.56,419241,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,825.5405,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1045.7841
+14004.59,420142,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,827.3279,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1047.9261
+14034.66,421044,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,827.3279,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1049.7802
+14064.69,421945,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,829.1035,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1051.6322
+14094.73,422846,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,830.8909,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1053.8002
+14124.79,423748,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,832.6901,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1056.163
+14154.83,424649,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,834.4892,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1058.6156
+14184.89,425551,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.74,15.0,836.9469,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1061.071
+14214.96,426453,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,838.6637,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1063.5264
+14245.06,427356,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,841.58,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1065.9845
+14275.09,428257,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,843.3438,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1068.4372
+14305.12,429158,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,845.1195,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1070.8899
+14335.16,430059,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,846.8951,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1073.3426
+14365.22,430961,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,848.6825,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1075.7979
+14395.26,431862,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,850.4699,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1078.2506
+14425.32,432764,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,852.2455,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1080.706
+14455.39,433666,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,855.5969,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1083.1614
+14485.46,434568,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,857.643,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1085.6168
+14515.52,435470,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,859.4421,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1088.0722
+14545.59,436372,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,861.2177,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1090.8989
+14575.62,437273,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,862.9934,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1093.3682
+14605.65,438174,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,864.7808,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1095.8209
+14635.69,439075,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,867.5206,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1098.2736
+14665.75,439977,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,870.0724,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1100.729
+14695.79,440878,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,871.8598,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1103.579
+14725.82,441779,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,874.3057,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1106.6323
+14755.89,442681,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,877.1749,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1109.689
+14786.02,443585,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.76,15.0,879.4914,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1112.7525
+14816.09,444487,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,882.5606,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1115.7025
+14846.12,445388,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.79,15.0,884.6067,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1119.0439
+14876.18,446290,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,887.911,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1122.5212
+14906.28,447193,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,891.4858,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1125.5213
+14936.38,448096,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,893.2849,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1128.3941
+14966.45,448998,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,896.7656,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1132.0521
+14996.48,449899,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,900.1875,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1135.7061
+15026.55,450801,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,902.1631,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1139.0455
+15056.58,451702,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,905.7378,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1142.6994
+15086.65,452604,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,909.2891,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1145.9035
+15116.68,453505,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,911.0412,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1148.9568
+15146.72,454406,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,914.616,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1152.1474
+15176.75,455307,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,917.4147,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1155.8154
+15206.78,456208,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,920.9307,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1159.4694
+15236.81,457109,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,923.5529,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1163.1233
+15266.85,458010,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,927.1395,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1166.7773
+15296.88,458911,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,930.726,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1170.4313
+15326.95,459813,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,934.3008,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1173.9806
+15357.01,460715,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,936.0882,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1177.0373
+15387.05,461616,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.78,15.0,938.2636,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1179.592
+15417.08,462517,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,941.4386,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1182.0447
+15447.15,463419,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,943.226,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1184.6547
+15477.18,464320,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,945.0016,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1187.7081
+15507.24,465222,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.82,15.0,946.7773,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1190.2988
+15537.28,466123,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,950.3403,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1194.0054
+15567.31,467024,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,953.8915,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1197.5441
+15597.38,467926,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,957.4663,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1201.0168
+15627.41,468827,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,959.2655,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1204.1308
+15657.44,469728,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,962.8167,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1207.5874
+15687.48,470629,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,966.3562,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1210.894
+15717.51,471530,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,968.1436,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1214.0874
+15747.54,472431,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,971.7066,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1217.9733
+15777.61,473333,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,975.2814,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1221.742
+15807.64,474234,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,978.8562,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1225.0313
+15837.71,475136,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,980.6553,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1228.182
+15867.74,476037,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,984.2066,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1231.6153
+15897.81,476939,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,987.7579,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1234.9174
+15927.87,477841,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,989.5217,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1237.9741
+15957.91,478742,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,993.0612,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1241.0274
+15987.94,479643,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,994.8369,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1243.6707
+16017.97,480544,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,996.6243,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1246.2647
+16048.04,481446,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,998.4116,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1249.0661
+16078.07,482347,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1001.9982,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1252.1194
+16108.11,483248,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,1003.7738,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1255.2561
+16138.17,484150,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1007.3486,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1258.3128
+16168.24,485052,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,1010.5236,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1261.8055
+16198.27,485953,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,1012.7108,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1265.3655
+16228.3,486854,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1016.2855,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1268.4221
+16258.34,487755,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1018.0729,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1270.7228
+16288.4,488657,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.76,15.0,1018.9666,0.7,1.2,0.55,조금 더움 (Slightly Warm),True,24.0,2,24.0,15.0,1271.8041
+16318.47,489559,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,1020.6599,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1273.6582
+16348.54,490461,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1021.6124,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1275.5523
+16378.6,491363,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,1025.199,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1278.609
+16408.7,492266,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1026.9981,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1281.0385
+16438.77,493168,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1028.7737,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1284.1152
+16468.84,494070,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.78,15.0,1031.008,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1286.7466
+16498.9,494972,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.65,15.0,1034.1359,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1288.98
+16528.97,495874,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1034.1359,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1290.834
+16559.03,496776,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,1035.9233,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1292.6881
+16589.13,497679,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1037.7107,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1294.5443
+16619.2,498581,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.66,15.0,1039.4863,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1296.3983
+16649.3,499484,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,1039.4863,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1298.2545
+16679.37,500386,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1041.2737,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1300.1705
+16709.43,501288,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1043.0611,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1302.0246
+16739.5,502190,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,1044.8603,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1303.8787
+16769.57,503092,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1046.6359,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1306.3328
+16799.6,503993,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1048.4233,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1309.3861
+16829.7,504896,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,1052.0098,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1312.9428
+16859.73,505797,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.74,15.0,1054.7379,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1316.0648
+16889.86,506701,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1057.3602,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1318.8936
+16919.9,507602,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.74,15.0,1059.9237,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1322.0556
+16949.96,508504,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1062.6871,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1325.677
+16980.0,509405,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1066.2501,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1329.3536
+17010.03,510306,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,1069.8014,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1332.6669
+17040.06,511207,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,1071.9416,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1336.0163
+17070.1,512108,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,1075.1283,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1339.8129
+17100.2,513011,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1078.7031,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1343.673
+17130.26,513913,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1082.2661,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1347.3476
+17160.3,514814,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1085.8173,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1351.3889
+17190.36,515716,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,1089.3921,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1355.6483
+17220.43,516618,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,6,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.7,15.0,1094.4956,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1360.0629
+17250.46,517519,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,1098.3408,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1364.9102
+17280.49,518420,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,6,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.83,15.0,1101.8921,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1369.4488
+17310.53,519321,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.52,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,1106.6898,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1373.9354
+17340.56,520222,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,1110.8173,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1378.19
+17370.66,521125,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1114.4038,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1382.1714
+17400.69,522026,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1117.9668,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1385.6467
+17430.79,522929,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.77,15.0,1120.5303,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1389.2842
+17460.89,523832,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,1123.3408,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1392.5549
+17490.96,524734,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,1126.9038,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1396.7769
+17521.06,525637,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.78,15.0,1131.0077,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1401.041
+17551.09,526538,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1135.829,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1405.3176
+17581.16,527440,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1139.4155,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1409.417
+17611.19,528341,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,1143.0138,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1413.4589
+17641.22,529242,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1146.5886,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1417.5875
+17671.32,530145,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1150.1869,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1421.8376
+17701.39,531047,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1153.7734,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1425.139
+17731.49,531950,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,1155.5491,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1427.6951
+17761.52,532851,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1157.3364,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1430.1478
+17791.59,533753,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1159.1356,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1432.6031
+17821.66,534655,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.8,15.0,1160.9347,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1435.0585
+17851.72,535557,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,1163.9333,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1437.5139
+17881.79,536459,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.68,15.0,1166.2734,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1439.9693
+17911.82,537360,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1168.049,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1442.404
+17941.85,538261,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1169.8364,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1444.8567
+17971.89,539162,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,1171.6238,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1447.3093
+18001.92,540063,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1173.3994,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1449.762
+18031.95,540964,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.74,15.0,1175.7748,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1452.4287
+18062.02,541866,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1178.691,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1455.3761
+18092.05,542767,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1180.4784,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1457.8287
+18122.12,543669,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1182.2776,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1460.3221
+18152.15,544570,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.78,15.0,1184.0767,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1462.9381
+18182.18,545471,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,1187.628,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1466.2101
+18212.25,546373,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,1189.4389,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1469.0642
+18242.28,547274,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,1192.7667,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1472.1175
+18272.32,548175,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1194.7658,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1475.0488
+18302.35,549076,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1198.3758,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1478.5668
+18332.45,549979,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.81,15.0,1200.175,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1481.7715
+18362.55,550882,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09999999999999998,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1203.7733,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1484.8316
+18392.58,551783,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,1205.5607,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1487.6256
+18422.62,552684,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,1209.1472,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1490.679
+18452.68,553586,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,1211.8401,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1494.127
+18482.72,554487,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,1214.4741,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1497.2563
+18512.78,555389,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,1217.0023,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1500.3657
+18542.81,556290,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.7,15.0,1219.8245,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1503.1463
+18572.85,557191,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1221.6237,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1505.9057
+18602.91,558093,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,1223.3993,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1508.3611
+18632.98,558995,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,1225.6335,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1510.8165
+18663.01,559896,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.69,15.0,1228.7497,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1513.7271
+18693.05,560797,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.8,15.0,1230.8076,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1517.2524
+18723.15,561700,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1234.1472,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1520.5932
+18753.18,562601,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,1237.6867,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1524.2471
+18783.21,563502,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.71,15.0,1241.2026,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1527.9011
+18813.28,564404,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.73,15.0,1244.6951,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1531.8805
+18843.38,565307,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.7,15.0,1248.2111,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1535.5232
+18873.44,566209,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,1250.1984,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1538.2886
+18903.48,567110,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1251.9858,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1540.7166
+18933.51,568011,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1253.7732,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1542.5686
+18963.54,568912,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.48,쾌적 (Neutral),False,22.0,1,cool,23.67,15.0,1255.5606,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1544.4206
+18993.58,569813,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.75,15.0,1257.3479,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1547.4173
+19023.61,570714,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.75,15.0,1260.0408,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1550.5379
+19053.71,571617,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.79,15.0,1262.6866,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1554.0567
+19083.74,572518,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,4,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1266.2849,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1557.7107
+19113.78,573419,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.77,15.0,1269.8597,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1561.7159
+19143.81,574320,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,5,0.7,1.2,0.5,쾌적 (Neutral),False,22.0,1,cool,23.76,15.0,1273.4462,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1565.5806
+19173.84,575221,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.78,15.0,1277.3973,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1569.9879
+19203.91,576123,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1280.6075,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1573.0446
+19233.94,577024,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.79,15.0,1282.5243,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1576.0812
+19263.97,577925,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.66,15.0,1285.9932,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1578.5339
+19294.04,578827,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1287.7688,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1581.3086
+19324.11,579729,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.68,15.0,1291.2025,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1584.7626
+19354.14,580630,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.09,쾌적 (Neutral),False,22.0,1,cool,23.71,15.0,1293.1193,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1587.462
+19384.21,581532,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.69,15.0,1296.3295,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1590.8373
+19414.27,582434,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.73,15.0,1298.4344,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1593.894
+19444.31,583335,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,3,0.7,1.2,0.51,조금 더움 (Slightly Warm),True,22.0,2,cool,23.72,15.0,1301.48,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1597.146
+19474.34,584236,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,2,0.7,1.2,0.49,쾌적 (Neutral),False,22.0,1,cool,23.74,15.0,1303.7848,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1600.1967
+19504.44,585139,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.71,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.02,15.0,1601.8116
+19534.5,586041,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.78,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.08,15.0,1601.8116
+19564.54,586942,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.85,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.15,15.0,1601.8116
+19594.57,587843,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.92,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.21,15.0,1601.8116
+19624.64,588745,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.99,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.28,15.0,1601.8116
+19654.7,589647,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.05,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.34,15.0,1601.8116
+19684.74,590548,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.12,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.41,15.0,1601.8116
+19714.8,591450,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.18,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.47,15.0,1601.8116
+19744.84,592351,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.25,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.53,15.0,1601.8116
+19774.9,593253,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.31,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.6,15.0,1601.8116
+19804.94,594154,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.38,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.66,15.0,1601.8116
+19834.97,595055,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.44,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.72,15.0,1601.8116
+19865.03,595957,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.5,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.78,15.0,1601.8116
+19895.1,596859,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.57,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.84,15.0,1601.8116
+19925.17,597761,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.63,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.9,15.0,1601.8116
+19955.23,598663,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.69,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,24.96,15.0,1601.8116
+19985.27,599564,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.75,15.0,1305.5722,0.7,1.2,,-,False,24.0,0,25.02,15.0,1601.8116
+20015.3,600465,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,0.07999999999999999,쾌적 (Neutral),False,22.0,1,cool,24.35,15.0,1309.2353,0.7,1.2,0.27999999999999997,쾌적 (Neutral),True,24.0,2,24.51,15.0,1608.2909
+20045.33,601366,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,1,0.7,1.2,-0.06,쾌적 (Neutral),False,22.0,1,cool,23.72,15.0,1314.7664,0.7,1.2,0.15999999999999998,쾌적 (Neutral),True,24.0,2,24.0,15.0,1614.1791
+20075.4,602268,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.82,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.03,15.0,1615.2138
+20105.47,603170,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.89,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.09,15.0,1615.2138
+20135.5,604071,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,23.95,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.16,15.0,1615.2138
+20165.57,604973,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.02,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.23,15.0,1615.2138
+20195.66,605876,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.09,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.29,15.0,1615.2138
+20225.73,606778,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.15,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.35,15.0,1615.2138
+20255.76,607679,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.22,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.42,15.0,1615.2138
+20285.8,608580,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.28,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.48,15.0,1615.2138
+20315.83,609481,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.35,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.54,15.0,1615.2138
+20345.93,610384,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.41,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.61,15.0,1615.2138
+20376.0,611286,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.47,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.67,15.0,1615.2138
+20406.06,612188,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.54,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.73,15.0,1615.2138
+20436.1,613089,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.6,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.79,15.0,1615.2138
+20466.16,613991,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.66,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.85,15.0,1615.2138
+20496.2,614892,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.72,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.91,15.0,1615.2138
+20526.23,615793,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.78,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,24.97,15.0,1615.2138
+20556.26,616694,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.84,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.03,15.0,1615.2138
+20586.33,617596,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.9,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.08,15.0,1615.2138
+20616.43,618499,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,24.96,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.14,15.0,1615.2138
+20646.46,619400,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.02,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.2,15.0,1615.2138
+20676.49,620301,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.08,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.25,15.0,1615.2138
+20706.56,621203,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.13,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.31,15.0,1615.2138
+20736.59,622104,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.19,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.37,15.0,1615.2138
+20766.63,623005,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.25,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.42,15.0,1615.2138
+20796.66,623906,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.3,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.48,15.0,1615.2138
+20826.69,624807,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.36,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.53,15.0,1615.2138
+20856.79,625710,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.41,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.58,15.0,1615.2138
+20886.82,626611,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.47,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.64,15.0,1615.2138
+20916.89,627513,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.52,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.69,15.0,1615.2138
+20946.96,628415,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.58,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.74,15.0,1615.2138
+20976.99,629316,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.63,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.79,15.0,1615.2138
+21007.06,630218,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.68,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.85,15.0,1615.2138
+21037.09,631119,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.74,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.9,15.0,1615.2138
+21067.12,632020,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.79,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,25.95,15.0,1615.2138
+21097.19,632922,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.84,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.0,15.0,1615.2138
+21127.22,633823,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.89,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.05,15.0,1615.2138
+21157.26,634724,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.94,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.1,15.0,1615.2138
+21187.32,635626,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,25.99,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.15,15.0,1615.2138
+21217.39,636528,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.04,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.2,15.0,1615.2138
+21247.45,637430,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.09,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.24,15.0,1615.2138
+21277.52,638332,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.14,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.29,15.0,1615.2138
+21307.62,639235,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.19,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.34,15.0,1615.2138
+21337.65,640136,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.24,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.39,15.0,1615.2138
+21367.72,641038,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.29,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.43,15.0,1615.2138
+21397.79,641940,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.33,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.48,15.0,1615.2138
+21427.82,642841,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.38,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.52,15.0,1615.2138
+21457.85,643742,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.43,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.57,15.0,1615.2138
+21487.89,644643,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.47,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.62,15.0,1615.2138
+21517.92,645544,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.52,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.66,15.0,1615.2138
+21548.05,646448,sitting,long,no,medium,no,"{""clothing"":""",32.0,60.0,0,0.7,1.2,,-,False,22.0,1,cool,26.57,15.0,1314.7664,0.7,1.2,,-,False,24.0,0,26.7,15.0,1615.2138

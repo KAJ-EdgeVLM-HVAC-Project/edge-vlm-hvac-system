@@ -6,6 +6,29 @@
 
 ## [Unreleased]
 
+### Added (추가)
+- **논문 실험 재현 도구**: `replay.py`(인식 로그로 제어·물리·에너지 재시뮬레이션),
+  `report_multi.py`(고정 22/24/26°C 다중 기준선 비교), `validate.py`(실행 vs 재생 대조).
+  `docs/experiment/analysis_log_6h.csv`로 논문 Table 9 수치를 그대로 재현.
+- **다른 보드 배포**: `deploy/setup.sh` — venv·의존성·llama.cpp 빌드(CUDA 버전·GPU arch
+  자동 감지)·모델 다운로드·데스크톱 런처 일괄 설치.
+- **Windows 무설치 패키지**: `deploy/windows/make_portable.py`(리눅스에서 조립),
+  `audit_package.py`(PE DLL 의존성·임포트 정적 검증).
+- **YOLO ONNX Runtime 경로**: TensorRT가 없는 환경에서 torch 없이 검출(결과 TensorRT와 동일).
+- **카메라 선택 화면**: 캡처 장치가 2대 이상이면 시작 시 선택. ZED 등 스테레오 카메라는 좌안만 사용.
+- **TensorRT 엔진 자동 재생성**: 다른 보드에서 만든 엔진이 열리지 않으면 onnx로 재빌드.
+
+### Fixed (버그 수정)
+- `vlm_processor.py`: torch/transformers를 무조건 import해 llama.cpp 전용 환경에서도 실패하던 문제.
+- `vlm_processor.py`: CUDA 라이브러리가 없으면 llama.cpp를 아예 쓰지 않던 문제(CPU 동작 허용).
+- `run.sh`: 다중 사용자 보드에서 다른 계정 소유 디스플레이를 잡아 GTK 초기화에 실패하던 문제.
+- `requirements_jetson.txt`: ultralytics 의존성이 opencv-python(Qt)·numpy 2.x를 끌어와
+  시스템 GTK cv2를 가리던 문제(`numpy<2`, ultralytics는 `--no-deps`로 분리).
+- `report_generator.py`: summary.txt를 UTF-8로 명시(한국어 Windows CP949 대비).
+
+### Changed (변경)
+- README·`docs/EXPERIMENT.md`를 게재 논문(한국멀티미디어학회 논문지 29권 10호) 기준으로 갱신.
+
 ### Fixed (버그 수정)
 - **수증기 분압 단위 오류** (`thermal_engine.py`): ISO 7730 Annex D의 `pa`는 Pa 단위인데
   `rh/100`으로 계산해 100배 작았음. 증발 열손실이 과대평가되어 **습도가 PMV에 거의

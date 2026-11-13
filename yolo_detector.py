@@ -17,11 +17,42 @@ import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_ENGINE = os.path.join(_HERE, "yolo26s.engine")
+_DEFAULT_ONNX   = os.path.join(_HERE, "yolo26s.onnx")
+_TRTEXEC        = "/usr/src/tensorrt/bin/trtexec"
 
 
 def _is_jetson() -> bool:
     import platform
     return platform.machine() == "aarch64" and os.path.exists("/etc/nv_tegra_release")
+
+
+def _trt_runtime_available() -> bool:
+    """tensorrt + cuda 파이썬 바인딩이 모두 임포트되는지."""
+    try:
+        import tensorrt  # noqa: F401
+        try:
+            from cuda.bindings import runtime  # noqa: F401
+        except ImportError:
+            from cuda import cudart  # noqa: F401
+        return True
+    except Exception:
+        return False
+
+
+def _rebuild_engine(engine_path: str) -> bool:
+    """onnx → 이 보드의 TensorRT 엔진 재생성 (수 분 소요). 성공 여부 반환."""
+    import subprocess
+    if not (os.path.exists(_DEFAULT_ONNX) and os.path.exists(_TRTEXEC)):
+        return False
+    if os.path.exists(engine_path):
+        os.replace(engine_path, engine_path + ".incompatible")
+    print(f"[YOLO] 이 보드용 TensorRT 엔진 생성 중... (수 분 소요, 최초 1회)")
+    r = subprocess.run([_TRTEXEC, f"--onnx={_DEFAULT_ONNX}",
+                        f"--saveEngine={engine_path}", "--fp16"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    ok = r.returncode == 0 and os.path.exists(engine_path)
+    print(f"[YOLO] 엔진 생성 {'완료' if ok else '실패'}")
+    return ok
 
 
 def _letterbox(img, size=768, color=114):
@@ -127,9 +158,53 @@ class _TRTYolo:
         return _nms(boxes, self.nms_iou)
 
 
+class _ONNXYolo:
+    """torch 없이 ONNX Runtime으로 사람(class 0) 검출.
+
+    Jetson 밖(Windows/일반 PC)에서 ultralytics+torch(수 GB) 대신 쓰는 경로.
+    전처리·후처리는 _TRTYolo와 동일해 검출 결과가 같다.
+    """
+
+    def __init__(self, onnx_path: str, imgsz: int = 768, conf: float = 0.25,
+                 nms_iou: float = 0.6):
+        import onnxruntime as ort
+        self.imgsz, self.conf, self.nms_iou = imgsz, conf, nms_iou
+        # GPU가 있으면 CUDA EP, 없으면 CPU. 둘 다 같은 결과.
+        providers = [p for p in ("CUDAExecutionProvider", "CPUExecutionProvider")
+                     if p in ort.get_available_providers()]
+        so = ort.SessionOptions()
+        so.log_severity_level = 3
+        self.sess = ort.InferenceSession(onnx_path, so, providers=providers)
+        self.i_name = self.sess.get_inputs()[0].name
+        self.provider = self.sess.get_providers()[0]
+
+    def infer_person_boxes(self, frame):
+        """프레임에서 사람 박스 리스트 반환: [(x1,y1,x2,y2,conf), ...] (원본 좌표)."""
+        import cv2
+        h0, w0 = frame.shape[:2]
+        lb, r, dw, dh = _letterbox(frame, self.imgsz)
+        rgb = cv2.cvtColor(lb, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+        inp = np.ascontiguousarray(rgb.transpose(2, 0, 1)[None])
+
+        out = self.sess.run(None, {self.i_name: inp})[0]
+
+        boxes = []
+        for x1, y1, x2, y2, c, cls in np.asarray(out).reshape(-1, 6):
+            if c < self.conf:
+                break                      # 신뢰도 내림차순 → 이후는 전부 더 낮음
+            if int(round(cls)) != 0:       # class 0 = person
+                continue
+            X1 = min(max((x1 - dw) / r, 0), w0)
+            Y1 = min(max((y1 - dh) / r, 0), h0)
+            X2 = min(max((x2 - dw) / r, 0), w0)
+            Y2 = min(max((y2 - dh) / r, 0), h0)
+            boxes.append((int(X1), int(Y1), int(X2), int(Y2), float(c)))
+        return _nms(boxes, self.nms_iou)
+
+
 class YOLODetector:
     """
-    실시간 인원 수 감지기 — Jetson은 TensorRT(GPU), 그 외는 ultralytics.
+    실시간 인원 수 감지기 — Jetson은 TensorRT(GPU), 그 외는 ONNX Runtime → ultralytics.
 
     ── 추천 설정 ──────────────────────────────────────────────────────────────
     Jetson Orin : 엔진(yolo26s.engine, imgsz=768) GPU ~10~15ms
@@ -141,6 +216,7 @@ class YOLODetector:
                  engine_path: str = _DEFAULT_ENGINE):
         self._model      = None      # ultralytics 모델 (폴백/비-Jetson)
         self._trt        = None      # TensorRT 백엔드 (Jetson)
+        self._onnx       = None      # ONNX Runtime 백엔드 (Windows/일반 PC)
         self._available  = False
         self.imgsz       = imgsz
         self.conf        = conf
@@ -148,19 +224,41 @@ class YOLODetector:
         self._last_count = 0
         self._last_boxes = []
 
-        # 1) Jetson + 엔진 있으면 TensorRT GPU 우선
-        if _is_jetson() and os.path.exists(engine_path):
+        # 1) Jetson + 엔진 있으면 TensorRT GPU 우선.
+        #    tensorrt/cuda 파이썬 모듈이 없으면 엔진을 만들어도 못 쓰므로
+        #    재생성하지 않고 곧장 ONNX로 간다 (엔진 재생성은 수 분 걸린다).
+        if _is_jetson() and _trt_runtime_available() and (
+                os.path.exists(engine_path) or os.path.exists(_DEFAULT_ONNX)):
+            for attempt in ("load", "rebuild"):
+                if attempt == "rebuild":
+                    # 엔진은 TRT 버전·GPU arch에 묶인 산출물 — 다른 보드에서 만든
+                    # 엔진은 열리지 않는다. onnx가 있으면 이 보드용으로 재생성.
+                    if not _rebuild_engine(engine_path):
+                        break
+                try:
+                    self._trt = _TRTYolo(engine_path, imgsz=768, conf=conf)
+                    self._available = True
+                    print(f"[YOLO] TensorRT 엔진(GPU) 로드 완료: "
+                          f"{os.path.basename(engine_path)} (imgsz=768, conf={conf})")
+                    break
+                except Exception as e:
+                    print(f"[YOLO] TensorRT 엔진 로드 실패: {str(e)[:120]}")
+                    self._trt = None
+        # 2) ONNX Runtime — torch 불필요. Windows/일반 PC의 기본 경로이자
+        #    Jetson에서 TensorRT가 실패했을 때의 1차 폴백.
+        if self._trt is None and os.path.exists(_DEFAULT_ONNX):
             try:
-                self._trt = _TRTYolo(engine_path, imgsz=768, conf=conf)
+                self._onnx = _ONNXYolo(_DEFAULT_ONNX, imgsz=768, conf=conf)
                 self._available = True
-                print(f"[YOLO] TensorRT 엔진(GPU) 로드 완료: {os.path.basename(engine_path)} "
-                      f"(imgsz=768, conf={conf})")
+                print(f"[YOLO] ONNX Runtime 로드 완료: "
+                      f"{os.path.basename(_DEFAULT_ONNX)} ({self._onnx.provider})")
+            except ImportError:
+                print("[YOLO] onnxruntime 미설치 → pip install onnxruntime")
             except Exception as e:
-                print(f"[YOLO] TensorRT 로드 실패 → ultralytics 폴백: {str(e)[:120]}")
-                self._trt = None
+                print(f"[YOLO] ONNX 로드 실패: {str(e)[:120]}")
 
-        # 2) 폴백/비-Jetson: ultralytics
-        if self._trt is None:
+        # 3) 최종 폴백: ultralytics (torch 필요)
+        if self._trt is None and self._onnx is None:
             self._device = "cpu" if _is_jetson() else None
             try:
                 from ultralytics import YOLO
@@ -187,6 +285,8 @@ class YOLODetector:
         try:
             if self._trt is not None:
                 self._last_boxes = self._trt.infer_person_boxes(frame)
+            elif self._onnx is not None:
+                self._last_boxes = self._onnx.infer_person_boxes(frame)
             else:
                 kwargs = dict(classes=[0], imgsz=self.imgsz, conf=self.conf, verbose=False)
                 if getattr(self, "_device", None):

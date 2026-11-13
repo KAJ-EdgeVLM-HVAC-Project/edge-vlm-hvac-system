@@ -8,7 +8,8 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 > 동아대학교 ai학과 현장미러형 프로젝트 — 김엔정 조 (김준경·김철호·김민서·정윤찬)
 
 📹 **데모 영상:** [docs/demo/vlm_hvac_demo.mp4](docs/demo/vlm_hvac_demo.mp4) — 동일 인물이 민소매→반팔→아우터로 옷을 바꿀 때 clo·PMV·냉난방이 자동으로 적응하는 실시간 시연
-📊 **실험 결과:** [docs/EXPERIMENT.md](docs/EXPERIMENT.md) — 실제 사무실 영상(Edinburgh Office Dataset) 분석, 데이터셋 출처·그래프·원자료 포함
+📊 **실험 결과:** [docs/EXPERIMENT.md](docs/EXPERIMENT.md) — 자체 촬영 사무실 영상 6시간, 고정 설정온도 22/24/26°C 대비 비교, 재현용 인식 로그 포함
+📄 **논문:** 김준경 외, 「비전-언어 모델 기반 엣지 냉난방 제어 프로토타입 설계」, *한국멀티미디어학회 논문지* 제29권 제10호, pp.1789–1807, 2026. [doi:10.9717/kmms.2026.29.10.1789](https://doi.org/10.9717/kmms.2026.29.10.1789)
 
 ---
 
@@ -24,6 +25,7 @@ ISO 7730:2005 PMV 열쾌적 지수를 계산해 공조기를 자동 제어하는
 8. [Jetson 배포](#jetson-orin-nano-super-배포)
 9. [실험 결과](#실험-결과)
 10. [브랜치 안내](#브랜치-안내)
+11. [인용](#인용)
 
 ---
 
@@ -185,6 +187,27 @@ sudo systemctl enable --now hvac
 journalctl -u hvac -f
 ```
 
+### 다른 Linux / Jetson 보드
+
+```bash
+git clone https://github.com/KAJ-EdgeVLM-HVAC-Project/edge-vlm-hvac-system.git
+cd edge-vlm-hvac-system
+./deploy/setup.sh      # venv·의존성·llama.cpp 빌드·모델 다운로드·데스크톱 런처까지 자동
+```
+
+TensorRT 엔진(`yolo26s.engine`)은 보드·TensorRT 버전마다 달라 저장소에 없다.
+첫 실행 때 `yolo26s.onnx`에서 그 보드용으로 자동 생성한다(수 분, 1회).
+
+### Windows (무설치 패키지)
+
+```bash
+python3 deploy/windows/make_portable.py   # 리눅스에서 조립 → dist/SmartHVAC/
+python3 deploy/windows/audit_package.py dist/SmartHVAC   # DLL·임포트 정적 검증
+```
+
+`dist/SmartHVAC`를 Windows로 옮겨 `SmartHVAC.bat` 실행. Python 설치 불필요
+(embeddable Python + MSVC 런타임 + llama.cpp CPU 빌드 + 모델 동봉, YOLO는 ONNX Runtime).
+
 ### 시작화면 선택지
 
 ```
@@ -297,37 +320,50 @@ PYTHONUNBUFFERED=1    # 로그 실시간 출력
 
 ## 실험 결과
 
-### 검증 데이터셋
+> 게재 논문(한국멀티미디어학회 논문지 29권 10호)의 실험이다. 상세·그래프·재현 방법은 [docs/EXPERIMENT.md](docs/EXPERIMENT.md).
 
-**Edinburgh Office Monitoring Video Dataset**
-
-> T. Qasim, R. B. Fisher, N. Bhatti, *"Ground-truthing Large Human Behavior Monitoring Datasets,"* Proc. ICPR 2020.  
-> http://homepages.inf.ed.ac.uk/rbf/OFFICEDATA/ — License: CC BY-NC-SA
+### 평가 조건
 
 | 항목 | 내용 |
 |------|------|
-| 해상도 | 1280 × 720, ~1 FPS |
-| 총 프레임 | 456,714 (20일치) |
-| 공간 | 4개 오피스 위치 |
-| 레이블 | bounding box + 행동 (standing/sitting/talking/fallen) |
+| 데이터 | 자체 촬영 실내 사무 영상 (고정 카메라, 1280×720, 30 FPS) |
+| 분석 구간 | 21,555초(약 359분), VLM 718회 (30초 주기) |
+| 재실 | 81.2%, 평균 2.2명 / 최대 6명 |
+| 환경 | 외기 32°C, 초기 실내 30°C (여름 냉방, 시뮬레이션 설정값) |
+| 비교 기준 | 고정 설정온도 **22 / 24 / 26°C** + Fan2 (재실 중), 공실 시 정지 |
 
-### 사무실 영상 분석 결과 (78분 / 겨울 조건: 외기 3°C, 초기 실내 10°C)
+### 에너지·쾌적성 (압축기 부하 기반 전력 모델 추정치)
 
-156개 분석 포인트, 재실 90% (평균 1.3명). 동일 영상을 두 제어기로 동시 시뮬레이션해 비교.
+| 지표 | 제안 방식 | 고정 22°C | 고정 24°C | 고정 26°C |
+|------|-----------|-----------|-----------|-----------|
+| 총 에너지 | **1,382.7 Wh** | 1,742.0 Wh | 1,613.9 Wh | 1,485.9 Wh |
+| 제안 방식 절감률 | — | −20.6% | −14.3% | −6.9% |
+| 쾌적률 (PMV ±0.5, 재실 중) | **98.9%** | 92.4% | 98.5% | 7.1% |
 
-| 지표 | AI 제어 | 규칙기반 (24°C 고정 + Fan2) |
-|------|---------|---------------------|
-| 총 에너지 | **254.3 Wh** | 799.9 Wh |
-| 에너지 절감 | **−545.5 Wh (68.2%)** | 기준 |
-| PMV 쾌적 구간 비율 | **85.9%** | 84.6% |
-| 평균 실내온도 | 21.6 °C | 23.0 °C |
+고정 제어는 설정값에 따라 쾌적률이 7.1~98.5%로 크게 흔들리지만, 제안 방식은
+설정값 선택과 무관하게 98.9%를 유지하면서 에너지를 6.9~20.6% 줄였다.
 
-> 전력 모델: `P = 팬전력 + 압축기정격(1200W) × 부하율`, 부하율은 실내로 새어드는
-> 열(외기 전도 + 체열)을 에어컨 냉난방 능력으로 나눈 값(설정온도·외기조건 반영).
+### 제어 요소별 기여도 (동일 인식 로그 재시뮬레이션)
 
-> 쾌적율은 동등하나, 정상상태에서 AI는 PMV를 약 +0.25(중립 근접)로, 룰베이스는
-> +0.49(더움 경계)로 유지 — **덜 쓰면서 더 안정적인 쾌적**.
-> 전체 그래프·원자료·해석은 [docs/EXPERIMENT.md](docs/EXPERIMENT.md) 참고.
+| 구성 | 에너지 | 절감 | 쾌적률 |
+|------|--------|------|--------|
+| 고정 24°C + Fan2 | 1,613.9 Wh | — | 98.5% |
+| + 동적 목표온도·팬 제어 (상시 가동) | 1,385.9 Wh | 14.1% | 98.6% |
+| + 쾌적 도달 시 압축기 정지 (전체) | 1,382.7 Wh | 14.3% | 98.9% |
+
+### 엣지 추론 (Jetson Orin Nano Super, Qwen3-VL-2B INT4, 20회)
+
+| 항목 | 값 |
+|------|-----|
+| 모델 크기 | GGUF 1,107.4 MB + mmproj 819.4 MB (≈1.9 GB) |
+| 콜드 스타트 | 9.08 s |
+| 추론 지연 (평균 / 중앙값) | 1,226.9 ms / 1,212.7 ms (σ 40.1) |
+| 메모리 (평균 / 전체) | 6,069.6 / 7,607 MB |
+| GPU 사용률 (평균 / 피크) | 87.9% / 99% |
+| 소비 전력 (평균 / 피크) | 16,979 / 17,840 mW (≈17 W) |
+
+> 에너지 값은 실측이 아니라 동일 시뮬레이터·전력 모델에서 병렬 구동한 **상대 비교용 추정치**다.
+> 영상은 여름철 반팔·긴팔 착석 재실자에 편중되어 있다(한계는 논문 5장 참고).
 
 ---
 
@@ -338,6 +374,20 @@ PYTHONUNBUFFERED=1    # 로그 실시간 출력
 | `main` | **현재 활성** — Mac/Jetson 공용. llama-server 상주, 상태머신 제어 연동, 실시간 에너지 모니터, headless, YOLO26s TensorRT GPU, 재실 추적 고도화까지 모두 병합 |
 | `feature/llamacpp-int4-quantization` | Jetson llama.cpp CUDA INT4 (구버전, 보관용) |
 | `feature/final-overhaul` | main에 병합 완료 (보관용) |
+
+---
+
+## 인용
+
+```bibtex
+@article{kim2026edgevlmhvac,
+  title   = {비전-언어 모델 기반 엣지 냉난방 제어 프로토타입 설계},
+  author  = {김준경 and 김철호 and 김민서 and 정윤찬 and 옥수열 and 오지영 and 이석환},
+  journal = {한국멀티미디어학회 논문지},
+  volume  = {29}, number = {10}, pages = {1789--1807}, year = {2026},
+  doi     = {10.9717/kmms.2026.29.10.1789}
+}
+```
 
 ---
 

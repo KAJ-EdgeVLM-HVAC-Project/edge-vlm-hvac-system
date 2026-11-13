@@ -240,3 +240,13 @@ vlm-env/
 
 # 컴파일 산출물
 a.out
+
+llama/
+models/
+dist/
+build_pyi/
+
+# 보드별 TensorRT 엔진 백업(재생성 가능)
+yolo26s.engine.*
+# 논문 재현용 인식 로그는 추적 (영상 없이 clo/met/인원만 포함)
+!docs/experiment/*.csv

@@ -151,6 +151,38 @@ class StartupResult:
     indoor_temp: float = 26.0    # 초기 실내온도 (°C)
     indoor_humid: float = 50.0   # 초기 실내습도 (%)
     outdoor_temp: float = 30.0   # 외기온도 (°C)
+    camera_index: int = 0        # /dev/videoN (camera 모드만)
+
+
+def list_cameras() -> list[tuple[int, str]]:
+    """연결된 캡처 카메라 [(index, name)]. Linux는 sysfs로 캡처 노드만 골라냄
+    (ZED 등은 metadata 노드 videoN+1이 같이 잡히므로 QUERYCAP으로 걸러냄).
+    Mac/기타는 index 0만 반환(열어봐야 알 수 있어 스타트업 지연 방지)."""
+    if platform.system() != "Linux":
+        return [(0, "Default camera")]
+    import fcntl
+    VIDIOC_QUERYCAP = 0x80685600
+    cams, seen = [], set()
+    for dev in sorted(glob.glob("/dev/video[0-9]*"), key=lambda p: int(p[10:])):
+        try:
+            with open(dev, "rb") as f:
+                buf = bytearray(104)
+                fcntl.ioctl(f, VIDIOC_QUERYCAP, buf)
+            device_caps = int.from_bytes(buf[84:88], "little")
+            if not device_caps & 0x1:       # V4L2_CAP_VIDEO_CAPTURE 없음
+                continue
+            # 한 카메라가 노드를 여러 개 만드는 경우(ZED 등: 캡처 + 메타데이터)
+            # 같은 USB 인터페이스는 첫 노드만 남긴다.
+            node = "/sys/class/video4linux/" + os.path.basename(dev)
+            usb_path = os.path.realpath(node + "/device")
+            if usb_path in seen:
+                continue
+            seen.add(usb_path)
+            card = bytes(buf[16:48]).split(b"\0")[0].decode(errors="replace")
+            cams.append((int(dev[10:]), card))
+        except OSError:
+            continue
+    return cams
 
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -257,6 +289,83 @@ def _select_mode() -> str:
             selected[0] = 'camera'
         if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
             selected[0] = 'camera'
+
+    cv2.destroyWindow(WIN)
+    return selected[0]
+
+
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+# 1.5단계: 카메라 선택 (2대 이상 연결된 경우만)
+# ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+_CAM_REGIONS: dict = {}
+
+def _render_camera(cams: list, hover: int) -> np.ndarray:
+    img  = Image.new('RGB', (W, H), BG)
+    draw = ImageDraw.Draw(img)
+
+    draw.rectangle([(0, 0), (W, 90)], fill=BG_HDR)
+    draw.line([(0, 90), (W, 90)], fill=HDR_LINE, width=1)
+    _center(draw, W//2, 12, 'Smart HVAC  VLM System', _f(27, True), C_TITLE)
+    _center(draw, W//2, 52, '사용할 카메라를 선택하세요', _f(15), C_SUB)
+
+    _CAM_REGIONS.clear()
+    RH, gap = 68, 14
+    x0, x1 = 120, W - 120
+    y = 124
+
+    for i, (idx, name) in enumerate(cams[:5]):
+        y1 = y + RH
+        is_hi = (hover == i)
+        _rrect(draw, x0, y, x1, y1, 12,
+               BG_SEL if is_hi else BG_CARD,
+               BORDER_HI if is_hi else BORDER, width=2 if is_hi else 1)
+        _rrect(draw, x0 + 16, y + 18, x0 + 48, y + 50, 14,
+               C_BLUE if is_hi else (231, 234, 241))
+        _center(draw, x0 + 32, y + 22, str(i + 1), _f(19, True),
+                C_WHITE if is_hi else (150, 155, 170))
+        draw.text((x0 + 64, y + 14), name, font=_f(18, True), fill=C_TITLE)
+        draw.text((x0 + 64, y + 40), f'/dev/video{idx}', font=_f(13), fill=C_SUB)
+        _CAM_REGIONS[i] = (x0, y, x1, y1)
+        y = y1 + gap
+
+    _center(draw, W//2, H - 36,
+            '키보드: 숫자키로 선택    ESC = 첫 번째 카메라', _f(13), C_HINT)
+    return _cv(img)
+
+
+def _select_camera(cams: list) -> int:
+    """카메라 선택 화면 — /dev/videoN 의 N 반환."""
+    selected = [None]
+    hover    = [-1]
+
+    def on_mouse(event, x, y, flags, _):
+        h = -1
+        for i, (x0, y0, x1, y1) in _CAM_REGIONS.items():
+            if x0 <= x <= x1 and y0 <= y <= y1:
+                h = i
+                break
+        hover[0] = h
+        if event == cv2.EVENT_LBUTTONDOWN and h >= 0:
+            selected[0] = cams[h][0]
+
+    WIN = 'Smart HVAC - 카메라 선택'
+    cv2.namedWindow(WIN, cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+    cv2.resizeWindow(WIN, W, H)
+    _center_window(WIN, W, H)
+    for _ in range(5):
+        cv2.waitKey(1)
+    cv2.setMouseCallback(WIN, on_mouse)
+
+    while selected[0] is None:
+        cv2.imshow(WIN, _render_camera(cams, hover[0]))
+        k = cv2.waitKey(30) & 0xFF
+        if ord('1') <= k <= ord('9') and (k - ord('1')) < len(cams):
+            selected[0] = cams[k - ord('1')][0]
+        elif k == 27:
+            selected[0] = cams[0][0]
+        if not _JETSON and cv2.getWindowProperty(WIN, cv2.WND_PROP_VISIBLE) < 1:
+            selected[0] = cams[0][0]
 
     cv2.destroyWindow(WIN)
     return selected[0]
@@ -673,6 +782,16 @@ def show_and_select() -> StartupResult:
         if video_path is None:
             mode = 'camera'
 
+    # 2.5단계: 카메라 선택 (camera 모드 + 2대 이상일 때만)
+    camera_index = 0
+    if mode == 'camera':
+        cams = list_cameras()
+        if len(cams) > 1:
+            camera_index = _select_camera(cams)
+        elif cams:
+            camera_index = cams[0][0]
+        print(f"[카메라] /dev/video{camera_index} 사용")
+
     # 3단계: 환경 프로파일
     profile = _select_profile()
 
@@ -683,4 +802,4 @@ def show_and_select() -> StartupResult:
 
     return StartupResult(mode=mode, video_path=video_path, profile=profile,
                          indoor_temp=indoor_temp, indoor_humid=indoor_humid,
-                         outdoor_temp=outdoor_temp)
+                         outdoor_temp=outdoor_temp, camera_index=camera_index)

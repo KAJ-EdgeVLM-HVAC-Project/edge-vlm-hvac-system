@@ -11,6 +11,8 @@ exclude =
     __pycache__,
     .git,
     results,
+    dist,
+    build_pyi,
     ppt_build,
     week2,week3,week4,week5,week6,week8
 max-line-length = 120

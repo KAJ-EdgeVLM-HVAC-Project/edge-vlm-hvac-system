@@ -16,17 +16,16 @@ for VENV in ./vlm-env "$HOME/vlm-env" ./.venv; do
     fi
 done
 
-# DISPLAY 자동 감지
+# DISPLAY 자동 감지 — 현재 사용자가 실제로 열 수 있는 X 디스플레이만 선택
+# (다중 사용자 보드: 물리 모니터(:1)는 다른 계정 소유, VNC 세션(:3 등)은 내 것)
 if [ -z "$DISPLAY" ]; then
-    SOCK=$(ls /tmp/.X11-unix/ 2>/dev/null | head -1)
-    if [ -n "$SOCK" ]; then
-        export DISPLAY="${SOCK/X/:}"
-        # GDM Xauthority (X 세션 소유자 권한)
-        [ -f /run/user/1000/gdm/Xauthority ] && \
-            export XAUTHORITY=/run/user/1000/gdm/Xauthority
-    else
-        echo "[run.sh] X 디스플레이 없음 — headless 모드"
-    fi
+    for SOCK in $(ls /tmp/.X11-unix/ 2>/dev/null); do
+        D="${SOCK/X/:}"
+        if DISPLAY="$D" timeout 2 xset q >/dev/null 2>&1; then
+            export DISPLAY="$D"; break
+        fi
+    done
+    [ -z "$DISPLAY" ] && echo "[run.sh] 열 수 있는 X 디스플레이 없음 — headless 모드"
 fi
 
 # Jetson 통합 메모리: CUDA VMM이 OOM 유발 → cudaMalloc 강제

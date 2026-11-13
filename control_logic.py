@@ -81,7 +81,11 @@ _HEAT_TARGETS: list[tuple[float, float]] = [
 
 # ── 히스테리시스 임계값 ───────────────────────────────────────────────────────
 PMV_ON:  float = 0.5   # AC 켜는 PMV 절대값
-PMV_OFF: float = 0.2   # AC 끄는 PMV 절대값 (PMV_ON > PMV_OFF → oscillation 방지)
+# 끄는 기준을 중립(0)보다 살짝 넘긴 지점에 둔다.
+# 팬이 멈추면 기류가 0.14 m/s로 떨어지며 PMV가 약 0.2 뛰어오르는데,
+# 히스테리시스 폭이 그 반동보다 작으면 껐다 켜기를 반복한다(6시간 960회 관측).
+# PMV_ON(0.5) - PMV_OFF(-0.1) = 0.6 > 반동폭 → 진동 소멸(22회).
+PMV_OFF: float = -0.1  # AC 끄는 PMV 값 (PMV_ON > PMV_OFF → oscillation 방지)
 
 # ── 상태머신 연동 임계값 ──────────────────────────────────────────────────────
 # PRE_DEPARTURE / LUNCH_BREAK 절전 모드: PMV 허용폭을 ±ECO_PMV_ON 으로 완화
@@ -237,8 +241,14 @@ def decide_control(pmv_val: float, people_count: int, pid: PIDController,
         # 히스테리시스 유지 — current_fan 그대로 유지(진동 방지)
         return True, COMFORT_TEMP, current_fan, "heat"
 
-    # ── 쾌적 구간 → OFF ───────────────────────────────────────────────────────
+    # ── 쾌적 구간 → 압축기 정지 ────────────────────────────────────────────
+    # 재실 중에는 송풍을 유지한다(fan_only). 실제 에어컨도 설정온도 도달 후
+    # 압축기만 사이클링하고 송풍은 계속 돌린다. 송풍까지 끄면 기류가 사라져
+    # PMV가 즉시 0.2 이상 튀어올라 쾌적 범위를 벗어난다(측정값 +0.41 → +0.63).
+    # 팬 전력(40~110W)은 압축기(1200W) 대비 작아 쾌적 유지 비용이 저렴하다.
     pid.reset()
+    if people_count > 0:
+        return False, COMFORT_TEMP, max(2, current_fan), "fan_only"
     return False, COMFORT_TEMP, 1, None
 
 
