@@ -56,13 +56,17 @@ def rb_mode_setpoint(outdoor_temp: float):
 
 def hvac_watts(is_on: bool, indoor_temp: float, target_temp: float,
                fan_speed: int, mode: str, room_size: float,
-               outdoor_temp: float, people_count: int) -> float:
+               outdoor_temp: float, people_count: int,
+               fan_only: bool = False) -> float:
     """공조기 순간 소비 전력 (W) — 압축기 부하 기반.
 
     P = 팬 전력 + 압축기 정격 × 부하율(0~1).
     AI/룰베이스 양쪽에 동일하게 적용해 공정 비교한다.
     """
-    if not is_on or fan_speed <= 0:
+    if not is_on:
+        # 송풍 전용: 압축기 정지, 팬 전력만 소비
+        return FAN_W.get(fan_speed, FAN_W[3]) if (fan_only and fan_speed > 0) else 0.0
+    if fan_speed <= 0:
         return 0.0
 
     p_fan       = FAN_W.get(fan_speed, FAN_W[3])

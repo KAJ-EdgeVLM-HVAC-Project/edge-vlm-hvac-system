@@ -122,12 +122,18 @@ class ThermalEngine:
     # 값은 '재실자 위치'의 기류 기준. 토출구 풍속이 아니라 확산 후 체감값이므로
     # 공조 중인 실내 거주역은 통상 0.1~0.25 m/s 수준이다. 과도하게 잡으면
     # 켜자마자 PMV가 급락해 즉시 정지하는 on/off 진동이 발생한다.
-    FAN_VEL = {0: 0.10, 1: 0.15, 2: 0.20, 3: 0.25}   # m/s
+    # 0단(정지)을 0.10이 아닌 0.14로 둔다. 송풍이 멈춰도 실내 공기가 즉시
+    # 정지하지는 않으며(잔류 기류·자연대류), 0.10으로 두면 on/off 순간 PMV가
+    # 계단식으로 튀어 제어 진동을 유발한다.
+    FAN_VEL = {0: 0.14, 1: 0.15, 2: 0.20, 3: 0.25}   # m/s
 
     @staticmethod
-    def air_velocity(hvac_on: bool, fan_speed: int) -> float:
-        """가동 상태·팬속도에 따른 체감 기류속도(m/s)."""
-        if not hvac_on:
+    def air_velocity(hvac_on: bool, fan_speed: int, fan_only: bool = False) -> float:
+        """가동 상태·팬속도에 따른 체감 기류속도(m/s).
+
+        fan_only=True(압축기 정지 + 송풍 유지)면 냉난방은 없어도 기류는 남는다.
+        """
+        if not hvac_on and not fan_only:
             return ThermalEngine.FAN_VEL[0]
         return ThermalEngine.FAN_VEL.get(int(fan_speed), 0.30)
 

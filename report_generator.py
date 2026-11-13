@@ -65,9 +65,18 @@ def generate(csv_path: str, output_dir: str) -> dict:
     ax.grid(alpha=0.3)
     _savefig(fig, output_dir, "01_pmv_comparison.png")
 
-    # 쾌적율 계산
-    ai_comfort = (df["ai_pmv"].abs() <= COMFORT_BAND).mean() * 100
-    rb_comfort = (df["rb_pmv"].abs() <= COMFORT_BAND).mean() * 100
+    # 쾌적율 계산 — 재실 중(PMV가 산출된) 프레임만 대상.
+    # 공실 프레임은 PMV가 NaN인데, 과거에는 이를 그대로 비교식에 넣어
+    # NaN <= 0.5 가 False로 평가되면서 '불쾌적'으로 집계됐다. 재실률이
+    # 81%면 쾌적율 상한이 81%로 눌려 AI·룰베이스 모두 과소평가된다.
+    # energy_monitor.update_comfort()가 쓰는 정의(재실 중만 집계)와 일치시킨다.
+    def _comfort_rate(col):
+        v = df[col].dropna()
+        return (v.abs() <= COMFORT_BAND).mean() * 100 if len(v) else 0.0
+
+    ai_comfort = _comfort_rate("ai_pmv")
+    rb_comfort = _comfort_rate("rb_pmv")
+    stats["occupied_frames"]      = int(df["ai_pmv"].notna().sum())
     stats["ai_comfort_rate_pct"]  = round(ai_comfort, 1)
     stats["rb_comfort_rate_pct"]  = round(rb_comfort, 1)
     stats["comfort_improvement_ppt"] = round(ai_comfort - rb_comfort, 1)
@@ -183,7 +192,8 @@ def generate(csv_path: str, output_dir: str) -> dict:
         f"  Rule-based total        : {stats['rb_total_energy_wh']:.2f} Wh",
         f"  Energy saved            : {stats['energy_saved_wh']:.2f} Wh  ({stats['energy_saving_pct']:.1f}%)",
         "",
-        "  ── Thermal Comfort (PMV ±0.5) ─────────────────",
+        "  ── Thermal Comfort (PMV ±0.5, occupied only) ──",
+        f"  Occupied frames         : {stats['occupied_frames']}",
         f"  AI Control comfort rate : {stats['ai_comfort_rate_pct']:.1f}%",
         f"  Rule-based comfort rate : {stats['rb_comfort_rate_pct']:.1f}%",
         f"  Improvement             : {stats['comfort_improvement_ppt']:+.1f} ppt",
@@ -202,7 +212,7 @@ def generate(csv_path: str, output_dir: str) -> dict:
     ]
     summary_text = "\n".join(summary_lines)
     print("\n" + summary_text)
-    with open(os.path.join(output_dir, "summary.txt"), "w") as f:
+    with open(os.path.join(output_dir, "summary.txt"), "w", encoding="utf-8") as f:
         f.write(summary_text + "\n")
 
     return stats
