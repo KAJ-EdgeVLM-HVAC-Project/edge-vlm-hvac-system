@@ -85,8 +85,8 @@ def replay(csv_path, fan_vel0=None, pmv_off=None, min_cycle=None,
         sm_clo, sm_met = {}, {}
         for _i in range(len(d)):
             _c = float(d.ai_clo.iloc[_i]) if pd.notna(d.ai_clo.iloc[_i]) else 0.7
-            _m = float(d.ai_met.iloc[_i]) if pd.notna(d.ai_met.iloc[_i]) else 1.2
-            ch.append(_c); mh.append(_m)
+            _mv = float(d.ai_met.iloc[_i]) if pd.notna(d.ai_met.iloc[_i]) else 1.2
+            ch.append(_c); mh.append(_mv)
             if len(ch) > VP.SMOOTH_WINDOW: ch.pop(0); mh.pop(0)
             cmed, mmed = statistics.median(ch), statistics.median(mh)
             if cs[0] is None:
